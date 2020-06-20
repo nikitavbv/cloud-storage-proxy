@@ -1,6 +1,6 @@
 use hyper::service::{make_service_fn, service_fn};
 use std::convert::Infallible;
-use hyper::{Request, Body, Response, Server};
+use hyper::{Request, Body, Response, Server, Method, Method::GET};
 
 #[tokio::main]
 async fn main() {
@@ -18,6 +18,10 @@ async fn main() {
 }
 
 async fn proxy_service(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+    if req.method() != GET {
+        return Ok(Response::new("wrong method".into()));
+    }
+
     println!("host is {}", req.headers().get("Host").unwrap().to_str().unwrap());
     Ok(Response::new("hello".into()))
 }
