@@ -1,10 +1,14 @@
 use std::env::var;
 use custom_error::custom_error;
+use std::clone::Clone;
 use std::fs::File;
 use std::io::{Read, ErrorKind};
 use std::io::Error as IOError;
 use toml::de::Error as TomlError;
 use std::collections::HashMap;
+use std::iter::Cloned;
+use std::rc::Rc;
+use std::sync::Arc;
 
 custom_error! {pub LoadConfigError
     FailedToRead{source: IOError} = "failed to read config file",
@@ -17,13 +21,13 @@ impl From<LoadConfigError> for IOError {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Config {
     service_account_key: String,
     buckets: HashMap<String, BucketConfiguration>
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct BucketConfiguration {
     host: String,
     bucket: Option<String>

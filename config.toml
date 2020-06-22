@@ -1,0 +1,8 @@
+service_account_key = """
+service account key goes here
+"""
+
+[buckets]
+    [buckets.nikitavbv]
+    host = "nikitavbv.com"
+    bucket = "nikitavbv.com"
