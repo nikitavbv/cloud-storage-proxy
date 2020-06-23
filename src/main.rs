@@ -3,7 +3,7 @@ extern crate custom_error;
 
 use hyper::service::{make_service_fn, service_fn};
 use std::convert::Infallible;
-use hyper::{Request, Body, Response, Server, Method};
+use hyper::{Request, Body, Response, Server, Method, Error};
 use crate::config::{load_config, Config};
 use std::sync::Arc;
 use std::ops::Deref;
@@ -17,11 +17,15 @@ async fn main() -> std::io::Result<()> {
 
     let config = Arc::new(load_config()?);
 
-    let make_svc = make_service_fn( move |_conn| {
+    let make_svc = make_service_fn(move |_| {
         let config = config.clone();
 
         async move {
-            Ok::<_, Infallible>(service_fn(    move |req: Request<Body>| proxy_service(req, config.borrow())))
+            Ok::<_, Error>(service_fn(move |_req| {
+                let config = config.clone();
+
+                async move { proxy_service(_req, &config).await }
+            }))
         }
     });
 
