@@ -23,14 +23,14 @@ impl From<LoadConfigError> for IOError {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
-    service_account_key: String,
-    buckets: HashMap<String, BucketConfiguration>
+    pub service_account_key: String,
+    pub buckets: HashMap<String, BucketConfiguration>
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct BucketConfiguration {
-    host: String,
-    bucket: Option<String>
+    pub host: String,
+    pub bucket: Option<String>
 }
 
 fn get_config_file_name() -> String {
