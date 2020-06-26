@@ -18,7 +18,7 @@ async fn main() -> std::io::Result<()> {
     let addr = ([127, 0, 0, 1], 8080).into();
 
     let config = Arc::new(load_config()?);
-    let client = Arc::new(GoogleCloudStorageClient::new(&config.service_account_key));
+    let client = Arc::new(GoogleCloudStorageClient::new(&config.service_account_key).await?);
 
     let make_svc = make_service_fn(move |_| {
         let config = config.clone();
