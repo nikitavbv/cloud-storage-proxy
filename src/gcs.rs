@@ -36,4 +36,17 @@ impl GoogleCloudStorageClient {
             reqwest_client: reqwest::Client::new(),
         })
     }
+
+    pub async fn get_object(&self, bucket_name: &str, object: &str) -> Result<GetObjectResult, GCSClientError> {
+        let access_token = &self.authenticator.token(
+            vec!["https://www.googleapis.com/auth/devstorage.full_control"]).await?;
+
+        let res = self.reqwest_client.get(&format!(
+            "https://www.googleapis.com/storage/v1/b/{}/o/{}",
+            bucket_name,
+            object
+        ));
+
+        Ok(GetObjectResult::new(res)?)
+    }
 }
