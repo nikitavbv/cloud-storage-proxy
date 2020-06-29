@@ -6,13 +6,25 @@ use std::sync::Arc;
 
 custom_error!{pub GCSClientError
     FailedToReadAccountKey{details: String} = "failed to read service account key: {details}",
-    FailedToAuthToServiceAccount{source: std::io::Error} = "failed to auth to service account: {source}"
+    FailedToAuthToServiceAccount{source: std::io::Error} = "failed to auth to service account: {source}",
+    OAuthError{source: yup_oauth2::error::Error} = "oauth failed: {source}",
+    RequestFailed{source: reqwest::Error} = "request failed: {source}"
 }
 
 impl From<GCSClientError> for std::io::Error {
 
     fn from(err: GCSClientError) -> Self {
         std::io::Error::new(ErrorKind::Other, format!("gcs client error: {}", err))
+    }
+}
+
+pub struct GetObjectResult {
+}
+
+impl GetObjectResult {
+    fn new(res: reqwest::Response) -> Result<Self, GCSClientError> {
+        Ok(GetObjectResult {
+        })
     }
 }
 
@@ -39,13 +51,13 @@ impl GoogleCloudStorageClient {
 
     pub async fn get_object(&self, bucket_name: &str, object: &str) -> Result<GetObjectResult, GCSClientError> {
         let access_token = &self.authenticator.token(
-            vec!["https://www.googleapis.com/auth/devstorage.full_control"]).await?;
+            &vec!["https://www.googleapis.com/auth/devstorage.full_control"]).await?;
 
         let res = self.reqwest_client.get(&format!(
             "https://www.googleapis.com/storage/v1/b/{}/o/{}",
             bucket_name,
             object
-        ));
+        )).send().await?;
 
         Ok(GetObjectResult::new(res)?)
     }
