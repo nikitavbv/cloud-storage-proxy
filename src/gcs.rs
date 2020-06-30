@@ -19,11 +19,13 @@ impl From<GCSClientError> for std::io::Error {
 }
 
 pub struct GetObjectResult {
+    pub body: Vec<u8>
 }
 
 impl GetObjectResult {
-    fn new(res: reqwest::Response) -> Result<Self, GCSClientError> {
+    async fn new(res: reqwest::Response) -> Result<Self, GCSClientError> {
         Ok(GetObjectResult {
+            body: res.bytes().await?.to_vec()
         })
     }
 }
@@ -59,6 +61,6 @@ impl GoogleCloudStorageClient {
             object
         )).send().await?;
 
-        Ok(GetObjectResult::new(res)?)
+        Ok(GetObjectResult::new(res).await?)
     }
 }
