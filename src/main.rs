@@ -53,6 +53,12 @@ async fn proxy_service(
         return Ok(Response::new("wrong method".into()));
     }
 
-    println!("host is {}", req.headers().get("Host").unwrap().to_str().unwrap());
+    let host = req.headers().get("Host").unwrap().to_str().unwrap();
+    let bucket = config.bucket_configuration_by_host(&host).unwrap();
+    let bucket_name = bucket.bucket.as_ref().unwrap().as_str();
+
+    println!("host is {}", host);
+    println!("bucket is {}", bucket_name);
+
     Ok(Response::new("hello".into()))
 }

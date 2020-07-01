@@ -33,6 +33,13 @@ pub struct BucketConfiguration {
     pub bucket: Option<String>
 }
 
+impl Config {
+
+    pub fn bucket_configuration_by_host(&self, host: &str) -> Option<&BucketConfiguration> {
+        self.buckets.values().find(|v| v.host  == host)
+    }
+}
+
 fn get_config_file_name() -> String {
     var("CONFIG_FILE").unwrap_or("/config.toml".into())
 }
