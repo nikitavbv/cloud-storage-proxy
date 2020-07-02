@@ -39,7 +39,7 @@ pub struct GoogleCloudStorageClient {
 impl GoogleCloudStorageClient {
 
     pub async fn new(service_account_key: &str) -> Result<Self, GCSClientError> {
-        let service_account_key: ServiceAccountKey = serde_json::from_str(service_account_key)
+        let service_account_key: ServiceAccountKey = serde_json::from_str(&service_account_key.replace("\n", "\\n"))
             .map_err(|source| GCSClientError::FailedToReadAccountKey { details: format!("{}", source) })?;
 
         let authenticator = ServiceAccountAuthenticator::builder(service_account_key)

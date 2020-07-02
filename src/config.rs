@@ -11,7 +11,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 custom_error! {pub LoadConfigError
-    FailedToRead{source: IOError} = "failed to read config file",
+    FailedToRead{source: IOError} = "failed to read config file: {source}",
     FailedToDeserialize{source: TomlError} = "failed to deserialize config: {source}"
 }
 
@@ -41,7 +41,7 @@ impl Config {
 }
 
 fn get_config_file_name() -> String {
-    var("CONFIG_FILE").unwrap_or("/config.toml".into())
+    var("CONFIG_FILE").unwrap_or("config.toml".into())
 }
 
 pub fn load_config() -> Result<Config, LoadConfigError> {
