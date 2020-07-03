@@ -6,7 +6,7 @@ use std::ops::Deref;
 use std::borrow::Borrow;
 use hyper::service::{make_service_fn, service_fn};
 use std::convert::Infallible;
-use hyper::{Request, Body, Response, Server, Method, Error};
+use hyper::{Request, Body, Response, Server, Method, Error, StatusCode};
 use crate::config::{load_config, Config};
 use crate::gcs::GoogleCloudStorageClient;
 
@@ -56,9 +56,29 @@ async fn proxy_service(
     let host = req.headers().get("Host").unwrap().to_str().unwrap();
     let bucket = config.bucket_configuration_by_host(&host).unwrap();
     let bucket_name = bucket.bucket.as_ref().unwrap().as_str();
+    let object_name = req.uri().path();
 
     println!("host is {}", host);
     println!("bucket is {}", bucket_name);
 
-    Ok(Response::new("hello".into()))
+    let object = match gcs.get_object(bucket_name, object_name).await {
+        Ok(v) => v,
+        Err(err) => {
+            eprintln!("failed to get gcs object: {}", err);
+
+            let errors_response = match Response::builder()
+                .status(StatusCode::from_u16(500).unwrap())
+                .body("failed to get gcs object".into()) {
+                Ok(v) => v,
+                Err(err) => {
+                    eprintln!("failed to create response: {}", err);
+                    return Ok(Response::new("internal server error".into()));
+                }
+            };
+
+            return Ok(errors_response)
+        }
+    };
+
+    Ok(Response::new(object.body.into()))
 }
