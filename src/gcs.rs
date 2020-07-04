@@ -39,7 +39,7 @@ pub struct GoogleCloudStorageClient {
 impl GoogleCloudStorageClient {
 
     pub async fn new(service_account_key: &str) -> Result<Self, GCSClientError> {
-        let service_account_key: ServiceAccountKey = serde_json::from_str(&service_account_key.replace("\n", "\\n"))
+        let service_account_key: ServiceAccountKey = serde_json::from_str(&service_account_key)
             .map_err(|source| GCSClientError::FailedToReadAccountKey { details: format!("{}", source) })?;
 
         let authenticator = ServiceAccountAuthenticator::builder(service_account_key)
@@ -55,11 +55,13 @@ impl GoogleCloudStorageClient {
         let access_token = &self.authenticator.token(
             &vec!["https://www.googleapis.com/auth/devstorage.full_control"]).await?;
 
-        let res = self.reqwest_client.get(&format!(
-            "https://www.googleapis.com/storage/v1/b/{}/o/{}",
+        let url = format!(
+            "https://storage.googleapis.com/{}/{}",
             bucket_name,
             object
-        )).send().await?;
+        );
+        
+        let res = self.reqwest_client.get(&url).send().await?;
 
         Ok(GetObjectResult::new(res).await?)
     }

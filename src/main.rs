@@ -56,7 +56,10 @@ async fn proxy_service(
     let host = req.headers().get("Host").unwrap().to_str().unwrap();
     let bucket = config.bucket_configuration_by_host(&host).unwrap();
     let bucket_name = bucket.bucket.as_ref().unwrap().as_str();
-    let object_name = req.uri().path();
+    let mut object_name = req.uri().path();
+    if object_name.starts_with("/") {
+        object_name = &object_name[1..];
+    }
 
     println!("host is {}", host);
     println!("bucket is {}", bucket_name);
