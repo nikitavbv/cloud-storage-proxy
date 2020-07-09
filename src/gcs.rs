@@ -38,7 +38,7 @@ pub struct GoogleCloudStorageClient {
 
 impl GoogleCloudStorageClient {
 
-    pub async fn new(service_account_key: &str) -> Result<Self, GCSClientError> {
+    pub async fn new(service_account_key: &str) -> Result<Self  , GCSClientError> {
         let service_account_key: ServiceAccountKey = serde_json::from_str(&service_account_key)
             .map_err(|source| GCSClientError::FailedToReadAccountKey { details: format!("{}", source) })?;
 
@@ -60,7 +60,7 @@ impl GoogleCloudStorageClient {
             bucket_name,
             object
         );
-        
+
         let res = self.reqwest_client.get(&url).send().await?;
 
         Ok(GetObjectResult::new(res).await?)

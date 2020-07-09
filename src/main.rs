@@ -9,6 +9,8 @@ use std::convert::Infallible;
 use hyper::{Request, Body, Response, Server, Method, Error, StatusCode};
 use crate::config::{load_config, Config};
 use crate::gcs::GoogleCloudStorageClient;
+use std::fs;
+use std::env::var;
 
 mod config;
 mod gcs;
@@ -18,7 +20,7 @@ async fn main() -> std::io::Result<()> {
     let addr = ([127, 0, 0, 1], 8080).into();
 
     let config = Arc::new(load_config()?);
-    let client = GoogleCloudStorageClient::new(&config.service_account_key).await?;
+    let client = GoogleCloudStorageClient::new(&service_account_key(&config)).await?;
     let client = Arc::new(client);
 
     let make_svc = make_service_fn(move |_| {
@@ -84,4 +86,17 @@ async fn proxy_service(
     };
 
     Ok(Response::new(object.body.into()))
+}
+
+fn service_account_key(config: &Config) -> String {
+    match &config.service_account_key {
+        Some(v) => v.to_string(),
+        None => fs::read_to_string(
+            &config.clone().service_account_key_file.unwrap_or(get_service_account_key_file_name())
+        ).expect("failed to read service account key file")
+    }
+}
+
+fn get_service_account_key_file_name() -> String {
+    var("SERVICE_ACCOUNT_KEY_FILE").unwrap_or("service_account_key.json".into())
 }

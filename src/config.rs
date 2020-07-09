@@ -23,7 +23,8 @@ impl From<LoadConfigError> for IOError {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
-    pub service_account_key: String,
+    pub service_account_key: Option<String>,
+    pub service_account_key_file: Option<String>,
     pub buckets: HashMap<String, BucketConfiguration>
 }
 
