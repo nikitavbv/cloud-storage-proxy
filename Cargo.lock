@@ -68,7 +68,7 @@ dependencies = [
 
 [[package]]
 name = "cloud-storage-proxy"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "custom_error",
  "hyper",
