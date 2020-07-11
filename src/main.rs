@@ -1,5 +1,6 @@
 #[macro_use] extern crate serde_derive;
 extern crate custom_error;
+#[macro_use] extern crate log;
 
 use std::sync::Arc;
 use std::ops::Deref;
@@ -17,6 +18,8 @@ mod gcs;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init();
+
     let addr = ([0, 0, 0, 0], 8080).into();
 
     let config = Arc::new(load_config()?);
@@ -63,8 +66,7 @@ async fn proxy_service(
         object_name = &object_name[1..];
     }
 
-    println!("host is {}", host);
-    println!("bucket is {}", bucket_name);
+    trace!("GET {} {}", bucket_name, object_name);
 
     let object = match gcs.get_object(bucket_name, object_name).await {
         Ok(v) => v,

@@ -1,6 +1,6 @@
 [package]
 name = "cloud-storage-proxy"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Nikita Volobuev <nikitavbv@gmail.com>"]
 edition = "2018"
 
@@ -17,3 +17,5 @@ reqwest = "0.10.6"
 openssl = { version = "0.10.29", features = ["vendored"] }
 yup-oauth2 = "4.1.2"
 serde_json = "1.0.55"
+log = "0.4.8"
+env_logger = "0.7.1"
