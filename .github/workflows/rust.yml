@@ -9,6 +9,19 @@ jobs:
       image: rust:latest
     steps:
       - uses: actions/checkout@v1
+      - name: Cache deps
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-deps
+        with:
+          path: |
+            ~/.cargo
+            target
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
       - name: Run tests
         run: rustup install nightly && rustup default nightly && cargo test
         #-  name: Clippy check
