@@ -8,7 +8,8 @@ custom_error!{pub GCSClientError
     FailedToReadAccountKey{details: String} = "failed to read service account key: {details}",
     FailedToAuthToServiceAccount{source: std::io::Error} = "failed to auth to service account: {source}",
     OAuthError{source: yup_oauth2::error::Error} = "oauth failed: {source}",
-    RequestFailed{source: reqwest::Error} = "request failed: {source}"
+    RequestFailed{source: reqwest::Error} = "request failed: {source}",
+    ObjectNotFound = "object not found"
 }
 
 impl From<GCSClientError> for std::io::Error {
@@ -19,7 +20,7 @@ impl From<GCSClientError> for std::io::Error {
 }
 
 pub struct GetObjectResult {
-    pub body: Vec<u8>
+    pub body: Vec<u8>,
 }
 
 impl GetObjectResult {
@@ -62,6 +63,10 @@ impl GoogleCloudStorageClient {
         );
 
         let res = self.reqwest_client.get(&url).send().await?;
+
+        if res.status() == 404 {
+            return Err(GCSClientError::ObjectNotFound)
+        }
 
         Ok(GetObjectResult::new(res).await?)
     }

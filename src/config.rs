@@ -31,7 +31,8 @@ pub struct Config {
 #[derive(Deserialize, Debug, Clone)]
 pub struct BucketConfiguration {
     pub host: String,
-    pub bucket: Option<String>
+    pub bucket: Option<String>,
+    pub index: Option<String>,
 }
 
 impl Config {

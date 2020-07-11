@@ -9,7 +9,7 @@ use hyper::service::{make_service_fn, service_fn};
 use std::convert::Infallible;
 use hyper::{Request, Body, Response, Server, Method, Error, StatusCode};
 use crate::config::{load_config, Config};
-use crate::gcs::GoogleCloudStorageClient;
+use crate::gcs::{GoogleCloudStorageClient, GCSClientError};
 use std::fs;
 use std::env::var;
 
@@ -61,24 +61,53 @@ async fn proxy_service(
     let host = req.headers().get("Host").unwrap().to_str().unwrap();
     let bucket = config.bucket_configuration_by_host(&host).unwrap();
     let bucket_name = bucket.bucket.as_ref().unwrap().as_str();
-    let mut object_name = req.uri().path();
-    if object_name.starts_with("/") {
-        object_name = &object_name[1..];
-    }
+    let mut object_name = req.uri().path().to_string();
 
     trace!("GET {} {}", bucket_name, object_name);
 
-    let object = match gcs.get_object(bucket_name, object_name).await {
+    if object_name.starts_with("/") {
+        object_name = object_name[1..].into();
+    }
+
+    // TODO: handle dirs
+    if object_name.is_empty() && object_name.ends_with("/") {
+        object_name = format!(
+            "{}{}",
+            object_name,
+            bucket.index.as_ref().unwrap_or(&"index.html".to_string()).clone()
+        );
+    }
+
+    let object = match gcs.get_object(bucket_name, &object_name).await {
         Ok(v) => v,
         Err(err) => {
-            eprintln!("failed to get gcs object: {}", err);
+            let is_not_found = match err {
+                GCSClientError::ObjectNotFound => true,
+                _ => false
+            };
+
+            if is_not_found {
+                let not_found_response = match Response::builder()
+                    .status(StatusCode::from_u16(404).unwrap())
+                    .body("not found.".into()) {
+                    Ok(v) => v,
+                    Err(err) => {
+                        error!("failed to create response: {}", err);
+                        return Ok(Response::new("internal server error".into()));
+                    }
+                };
+
+                return Ok(not_found_response);
+            }
+
+            error!("failed to get gcs object: {}", err);
 
             let errors_response = match Response::builder()
                 .status(StatusCode::from_u16(500).unwrap())
                 .body("failed to get gcs object".into()) {
                 Ok(v) => v,
                 Err(err) => {
-                    eprintln!("failed to create response: {}", err);
+                    error!("failed to create response: {}", err);
                     return Ok(Response::new("internal server error".into()));
                 }
             };
