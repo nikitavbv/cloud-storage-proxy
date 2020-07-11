@@ -17,7 +17,7 @@ mod gcs;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let addr = ([127, 0, 0, 1], 8080).into();
+    let addr = ([0, 0, 0, 0], 8080).into();
 
     let config = Arc::new(load_config()?);
     let client = GoogleCloudStorageClient::new(&service_account_key(&config)).await?;
