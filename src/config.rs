@@ -33,6 +33,7 @@ pub struct BucketConfiguration {
     pub host: String,
     pub bucket: Option<String>,
     pub index: Option<String>,
+    pub not_found: Option<String>
 }
 
 impl Config {

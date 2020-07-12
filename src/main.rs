@@ -10,6 +10,7 @@ use crate::config::{load_config, Config};
 use crate::gcs::{GoogleCloudStorageClient, GCSClientError};
 use std::fs;
 use std::env::var;
+use gcs::GetObjectResult;
 
 mod config;
 mod gcs;
@@ -85,17 +86,22 @@ async fn proxy_service(
             };
 
             if is_not_found {
-                let not_found_response = match Response::builder()
-                    .status(StatusCode::from_u16(404).unwrap())
-                    .body("not found.".into()) {
-                    Ok(v) => v,
-                    Err(err) => {
-                        error!("failed to create response: {}", err);
-                        return Ok(Response::new("internal server error".into()));
+                let not_found_object_name = bucket.not_found.as_ref()
+                    .unwrap_or(&"404.html".to_string())
+                    .clone();
+                
+                return Ok(match gcs.get_object(bucket_name, &not_found_object_name).await {
+                    Ok(v) => response_for_object(v),
+                    Err(_) => match Response::builder()
+                            .status(StatusCode::from_u16(404).unwrap())
+                            .body("not found.".into()) {
+                        Ok(v) => v,
+                        Err(err) => {
+                            error!("failed to create response: {}", err);
+                            return Ok(Response::new("internal server error".into()));
+                        }
                     }
-                };
-
-                return Ok(not_found_response);
+                });
             }
 
             error!("failed to get gcs object: {}", err);
@@ -114,6 +120,10 @@ async fn proxy_service(
         }
     };
 
+    Ok(response_for_object(object))
+}
+
+fn response_for_object(object: GetObjectResult) -> Response<Body> {
     let mut res = Response::builder()
         .status(StatusCode::from_u16(200).unwrap())
         .body(object.body.into()).unwrap();
@@ -123,7 +133,7 @@ async fn proxy_service(
         headers.insert(HeaderName::from_lowercase(k.as_bytes()).unwrap(), HeaderValue::from_str(&v).unwrap());
     }
 
-    Ok(res)
+    return res;
 }
 
 fn service_account_key(config: &Config) -> String {
