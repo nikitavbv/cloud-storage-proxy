@@ -3,11 +3,9 @@ extern crate custom_error;
 #[macro_use] extern crate log;
 
 use std::sync::Arc;
-use std::ops::Deref;
-use std::borrow::Borrow;
 use hyper::service::{make_service_fn, service_fn};
 use std::convert::Infallible;
-use hyper::{Request, Body, Response, Server, Method, Error, StatusCode};
+use hyper::{Request, Body, Response, Server, Method, Error, StatusCode, header::{HeaderValue, HeaderName}};
 use crate::config::{load_config, Config};
 use crate::gcs::{GoogleCloudStorageClient, GCSClientError};
 use std::fs;
@@ -116,7 +114,16 @@ async fn proxy_service(
         }
     };
 
-    Ok(Response::new(object.body.into()))
+    let mut res = Response::builder()
+        .status(StatusCode::from_u16(200).unwrap())
+        .body(object.body.into()).unwrap();
+
+    let headers = res.headers_mut();
+    for (k, v) in object.headers {
+        headers.insert(HeaderName::from_lowercase(k.as_bytes()).unwrap(), HeaderValue::from_str(&v).unwrap());
+    }
+
+    Ok(res)
 }
 
 fn service_account_key(config: &Config) -> String {
