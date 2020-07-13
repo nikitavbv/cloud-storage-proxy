@@ -3,17 +3,17 @@ extern crate custom_error;
 #[macro_use] extern crate log;
 extern crate ttl_cache;
 
-use std::sync::{Mutex, Arc};
 use hyper::service::{make_service_fn, service_fn};
 use std::convert::Infallible;
 use hyper::{Request, Body, Response, Server, Method, Error, StatusCode, header::{HeaderValue, HeaderName}};
 use crate::config::{load_config, Config};
 use crate::gcs::{GoogleCloudStorageClient, GCSClientError};
 use std::fs;
-use std::env::var;
+use std::{sync::Arc, env::var};
 use gcs::GetObjectResult;
 use caching::{GCSObjectCache, LocalCache};
 use config::BucketConfiguration;
+use tokio::sync::Mutex;
 
 mod config;
 mod gcs;
@@ -28,17 +28,20 @@ async fn main() -> std::io::Result<()> {
     let config = Arc::new(load_config()?);
     let client = GoogleCloudStorageClient::new(&service_account_key(&config)).await?;
     let client = Arc::new(client);
+    let cache = Arc::new(Mutex::new(Box::new(LocalCache::new(100)) as Box<dyn GCSObjectCache + Send>));
 
     let make_svc = make_service_fn(move |_| {
         let config = config.clone();
         let client = client.clone();
+        let cache = cache.clone();
 
         async move {
             Ok::<_, Error>(service_fn(move |_req| {
                 let config = config.clone();
                 let client = client.clone();
+                let cache = cache.clone();
 
-                async move { proxy_service(_req, &config, &client).await }
+                async move { proxy_service(_req, &config, &client, cache.clone()).await }
             }))
         }
     });
@@ -55,10 +58,9 @@ async fn main() -> std::io::Result<()> {
 async fn proxy_service(
     req: Request<Body>,
     config: &Config,
-    gcs: &GoogleCloudStorageClient
+    gcs: &GoogleCloudStorageClient,
+    cache: Arc<Mutex<Box<dyn GCSObjectCache + Send>>>,
 ) -> Result<Response<Body>, Infallible> {    
-    let cache = Arc::new(Mutex::new(LocalCache::new(100)));
-
     if req.method() != Method::GET {
         return Ok(Response::new("wrong method".into()));
     }
@@ -83,7 +85,7 @@ async fn proxy_service(
         );
     }
 
-    let mut cache = cache.lock().unwrap();
+    let mut cache = cache.lock().await;
     let object = cache.get(&bucket_name, &object_name);
     let object = match object.clone() {
         Some(v) => {
