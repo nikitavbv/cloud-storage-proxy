@@ -19,6 +19,7 @@ impl From<GCSClientError> for std::io::Error {
     }
 }
 
+#[derive(Clone)]
 pub struct GetObjectResult {
     pub body: Vec<u8>,
     pub headers: HashMap<String, String>

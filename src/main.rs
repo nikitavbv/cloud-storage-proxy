@@ -1,8 +1,9 @@
 #[macro_use] extern crate serde_derive;
 extern crate custom_error;
 #[macro_use] extern crate log;
+extern crate ttl_cache;
 
-use std::sync::Arc;
+use std::sync::{Mutex, Arc};
 use hyper::service::{make_service_fn, service_fn};
 use std::convert::Infallible;
 use hyper::{Request, Body, Response, Server, Method, Error, StatusCode, header::{HeaderValue, HeaderName}};
@@ -11,9 +12,12 @@ use crate::gcs::{GoogleCloudStorageClient, GCSClientError};
 use std::fs;
 use std::env::var;
 use gcs::GetObjectResult;
+use caching::{GCSObjectCache, LocalCache};
+use config::BucketConfiguration;
 
 mod config;
 mod gcs;
+mod caching;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -52,7 +56,9 @@ async fn proxy_service(
     req: Request<Body>,
     config: &Config,
     gcs: &GoogleCloudStorageClient
-) -> Result<Response<Body>, Infallible> {
+) -> Result<Response<Body>, Infallible> {    
+    let cache = Arc::new(Mutex::new(LocalCache::new(100)));
+
     if req.method() != Method::GET {
         return Ok(Response::new("wrong method".into()));
     }
@@ -77,50 +83,69 @@ async fn proxy_service(
         );
     }
 
-    let object = match gcs.get_object(bucket_name, &object_name).await {
-        Ok(v) => v,
-        Err(err) => {
-            let is_not_found = match err {
-                GCSClientError::ObjectNotFound => true,
-                _ => false
-            };
-
-            if is_not_found {
-                let not_found_object_name = bucket.not_found.as_ref()
-                    .unwrap_or(&"404.html".to_string())
-                    .clone();
-                
-                return Ok(match gcs.get_object(bucket_name, &not_found_object_name).await {
-                    Ok(v) => response_for_object(v),
-                    Err(_) => match Response::builder()
-                            .status(StatusCode::from_u16(404).unwrap())
-                            .body("not found.".into()) {
-                        Ok(v) => v,
-                        Err(err) => {
-                            error!("failed to create response: {}", err);
-                            return Ok(Response::new("internal server error".into()));
-                        }
-                    }
-                });
-            }
-
-            error!("failed to get gcs object: {}", err);
-
-            let errors_response = match Response::builder()
-                .status(StatusCode::from_u16(500).unwrap())
-                .body("failed to get gcs object".into()) {
+    let mut cache = cache.lock().unwrap();
+    let object = cache.get(&bucket_name, &object_name);
+    let object = match object.clone() {
+        Some(v) => {
+            println!("cache hit");
+            v.clone()
+        },
+        None => {
+            println!("cache miss");
+            let obj = match gcs.get_object(bucket_name, &object_name).await {
                 Ok(v) => v,
-                Err(err) => {
-                    error!("failed to create response: {}", err);
-                    return Ok(Response::new("internal server error".into()));
-                }
+                Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, &gcs).await)
             };
-
-            return Ok(errors_response)
+            cache.put(&bucket_name, &object_name, obj.clone());
+            obj
         }
     };
 
     Ok(response_for_object(object))
+}
+
+async fn response_for_gcs_client_error(
+    err: GCSClientError, 
+    bucket: &BucketConfiguration, 
+    bucket_name: &str, 
+    object_name: &str, 
+    gcs: &GoogleCloudStorageClient,
+) -> Response<Body> {
+    let is_not_found = match err {
+        GCSClientError::ObjectNotFound => true,
+        _ => false
+    };
+
+    if is_not_found {
+        let not_found_object_name = bucket.not_found.as_ref()
+            .unwrap_or(&"404.html".to_string())
+            .clone();
+        
+        return match gcs.get_object(bucket_name, &not_found_object_name).await {
+            Ok(v) => response_for_object(v),
+            Err(_) => match Response::builder()
+                    .status(StatusCode::from_u16(404).unwrap())
+                    .body("not found.".into()) {
+                Ok(v) => v,
+                Err(err) => {
+                    error!("failed to create response: {}", err);
+                    return Response::new("internal server error".into());
+                }
+            }
+        };
+    }
+
+    error!("failed to get gcs object: {}", err);
+
+    match Response::builder()
+        .status(StatusCode::from_u16(500).unwrap())
+        .body("failed to get gcs object".into()) {
+        Ok(v) => v,
+        Err(err) => {
+            error!("failed to create response: {}", err);
+            Response::new("internal server error".into())
+        }
+    }
 }
 
 fn response_for_object(object: GetObjectResult) -> Response<Body> {
