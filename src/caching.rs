@@ -7,6 +7,19 @@ pub trait GCSObjectCache {
     fn get(&self, object_name: &str) -> Option<&GetObjectResult>;
 }
 
+pub struct NoCaching {
+}
+
+impl GCSObjectCache for NoCaching {
+    fn put(&mut self, object_name: &str, object: GetObjectResult) {
+        // do nothing
+    }
+
+    fn get(&self, object_name: &str) -> Option<&GetObjectResult> {
+        None
+    }
+}
+
 pub struct LocalCache {
     cache: TtlCache<String, GetObjectResult>,
 }
