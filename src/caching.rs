@@ -10,6 +10,13 @@ pub trait GCSObjectCache {
 pub struct NoCaching {
 }
 
+impl NoCaching {
+    pub fn new() -> Self {
+        NoCaching {
+        }
+    }
+}
+
 impl GCSObjectCache for NoCaching {
     fn put(&mut self, object_name: &str, object: GetObjectResult) {
         // do nothing
