@@ -12,8 +12,9 @@ use std::fs;
 use std::{sync::Arc, env::var, collections::HashMap};
 use gcs::GetObjectResult;
 use caching::{GCSObjectCache, LocalCache};
-use config::BucketConfiguration;
+use config::{Caching, BucketConfiguration};
 use tokio::sync::Mutex;
+use crate::caching::NoCaching;
 
 mod config;
 mod gcs;
@@ -30,18 +31,26 @@ async fn main() -> std::io::Result<()> {
     let client = Arc::new(client);
     let cache = Arc::new(Mutex::new(HashMap::new()));
 
+    let default_cache_provider: Arc<Mutex<Box<dyn Fn (&Config) -> Box<dyn GCSObjectCache + Send> + Send>>> = Arc::new(Mutex::new(Box::new(
+        |config| config.caching.as_ref()
+            .map(|v| make_cache(&v))
+            .unwrap_or(Box::new(NoCaching::new()))
+    )));
+
     let make_svc = make_service_fn(move |_| {
         let config = config.clone();
         let client = client.clone();
         let cache = cache.clone();
+        let default_cache_provider = default_cache_provider.clone();
 
         async move {
             Ok::<_, Error>(service_fn(move |_req| {
                 let config = config.clone();
                 let client = client.clone();
                 let cache = cache.clone();
+                let default_cache_provider = default_cache_provider.clone();
 
-                async move { proxy_service(_req, &config, &client, cache.clone()).await }
+                async move { proxy_service(_req, &config, &client, cache.clone(), &default_cache_provider).await }
             }))
         }
     });
@@ -60,6 +69,7 @@ async fn proxy_service(
     config: &Config,
     gcs: &GoogleCloudStorageClient,
     cache: Arc<Mutex<HashMap<String, Box<dyn GCSObjectCache + Send>>>>,
+    cache_provider: &Arc<Mutex<Box<dyn Fn (&Config) -> Box<dyn GCSObjectCache + Send> + Send>>>
 ) -> Result<Response<Body>, Infallible> {    
     if req.method() != Method::GET {
         return Ok(Response::new("wrong method".into()));
@@ -86,8 +96,17 @@ async fn proxy_service(
     }
 
     let mut cache = cache.lock().await;
-    let mut cache = cache.get_mut(bucket_name)
-        .expect("no cache set for this bucket");
+
+    let mut cache = match cache.get_mut(bucket_name) {
+        Some(v) => v,
+        None => {
+            let provider = cache_provider.lock().await;
+            let new_cache = provider(&config);
+            cache.insert(bucket_name.into(), new_cache);
+            cache.get_mut(bucket_name).unwrap()
+        }
+    };
+
     let object = cache.get(&object_name);
     let object = match object.clone() {
         Some(v) => {
@@ -176,4 +195,10 @@ fn service_account_key(config: &Config) -> String {
 
 fn get_service_account_key_file_name() -> String {
     var("SERVICE_ACCOUNT_KEY_FILE").unwrap_or("service_account_key.json".into())
+}
+
+fn make_cache(caching: &Caching) -> Box<dyn GCSObjectCache + Send> {
+    Box::new(match caching {
+        Caching::Local { capacity }  => LocalCache::new(*capacity)
+    })
 }
