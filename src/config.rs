@@ -36,9 +36,26 @@ pub struct BucketConfiguration {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-#[serde(tag = "type")]
-pub enum Caching {
-    Local { capacity: usize },
+pub struct Caching {
+    pub caching_type: Option<String>,
+    pub capacity: Option<usize>
+}
+
+impl Caching {
+    pub fn override_with(&self, other: &Caching) -> Caching {
+        let mut this_clone = self.clone();
+        let other = other.clone();
+
+        if other.caching_type.is_some() {
+            this_clone.caching_type = other.caching_type;
+        }
+
+        if other.capacity.is_some() {
+            this_clone.capacity = other.capacity;
+        }
+
+        this_clone
+    }
 }
 
 impl Config {
