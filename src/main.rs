@@ -91,12 +91,12 @@ async fn proxy_service(
     let mut cache = match cache.get_mut(bucket_name) {
         Some(v) => v,
         None => {
-            let new_cache = make_cache(match &config.caching {
-                Some(v) => match &bucket.caching {
-                    Some(v2) => &v.override_with(v2),
+            let new_cache = make_cache(&match config.caching.clone() {
+                Some(v) => match bucket.caching.clone() {
+                    Some(v2) => v.override_with(&v2),
                     None => v,
                 },
-                None => &bucket.caching.unwrap(),
+                None => bucket.caching.clone().unwrap(),
             });
             cache.insert(bucket_name.into(), new_cache);
             cache.get_mut(bucket_name).unwrap()
@@ -194,7 +194,9 @@ fn get_service_account_key_file_name() -> String {
 }
 
 fn make_cache(caching: &Caching) -> Box<dyn GCSObjectCache + Send> {
-    match &caching.caching_type.unwrap()[..] {
+    let caching_type= &caching.caching_type.as_ref().unwrap()[..];
+
+    match caching_type {
         "local" => Box::new(LocalCache::new(caching.capacity.unwrap())),
         _ => Box::new(NoCaching::new()),
     }
