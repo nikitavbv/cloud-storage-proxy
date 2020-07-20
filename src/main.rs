@@ -88,6 +88,8 @@ async fn proxy_service(
 
     let mut cache = cache.lock().await;
 
+    println!("here4");
+
     let mut cache = match cache.get_mut(bucket_name) {
         Some(v) => v,
         None => {
@@ -96,10 +98,11 @@ async fn proxy_service(
                     Some(v2) => v.override_with(&v2),
                     None => v,
                 },
-                None => bucket.caching.clone().unwrap(),
+                None => bucket.caching.clone()
+                    .expect("expected caching to be set for bucket, as no caching is set globally")
             });
             cache.insert(bucket_name.into(), new_cache);
-            cache.get_mut(bucket_name).unwrap()
+            cache.get_mut(bucket_name)
         }
     };
 
