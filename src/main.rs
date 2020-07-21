@@ -102,7 +102,7 @@ async fn proxy_service(
                     .expect("expected caching to be set for bucket, as no caching is set globally")
             });
             cache.insert(bucket_name.into(), new_cache);
-            cache.get_mut(bucket_name)
+            cache.get_mut(bucket_name).unwrap()
         }
     };
 
