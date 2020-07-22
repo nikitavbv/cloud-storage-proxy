@@ -88,9 +88,7 @@ async fn proxy_service(
 
     let mut cache = cache.lock().await;
 
-    println!("here4");
-
-    let mut cache = match cache.get_mut(bucket_name) {
+    let cache = match cache.get_mut(bucket_name) {
         Some(v) => v,
         None => {
             let new_cache = make_cache(&match config.caching.clone() {
@@ -130,7 +128,7 @@ async fn response_for_gcs_client_error(
     err: GCSClientError, 
     bucket: &BucketConfiguration, 
     bucket_name: &str, 
-    object_name: &str, 
+    _object_name: &str,
     gcs: &GoogleCloudStorageClient,
 ) -> Response<Body> {
     let is_not_found = match err {

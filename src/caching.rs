@@ -18,11 +18,11 @@ impl NoCaching {
 }
 
 impl GCSObjectCache for NoCaching {
-    fn put(&mut self, object_name: &str, object: GetObjectResult) {
+    fn put(&mut self, _object_name: &str, _object: GetObjectResult) {
         // do nothing
     }
 
-    fn get(&self, object_name: &str) -> Option<&GetObjectResult> {
+    fn get(&self, _object_name: &str) -> Option<&GetObjectResult> {
         None
     }
 }

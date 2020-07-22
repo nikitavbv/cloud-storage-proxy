@@ -1,5 +1,5 @@
 use custom_error::custom_error;
-use yup_oauth2::{ServiceAccountAuthenticator, read_service_account_key, ServiceAccountKey};
+use yup_oauth2::{ServiceAccountAuthenticator, ServiceAccountKey};
 use yup_oauth2::authenticator::{Authenticator, DefaultHyperClient, HyperClientBuilder};
 use std::io::ErrorKind;
 use std::{collections::HashMap, sync::Arc};
