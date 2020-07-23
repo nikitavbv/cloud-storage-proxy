@@ -37,6 +37,7 @@ pub struct BucketConfiguration {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Caching {
+    #[serde(rename="type")]
     pub caching_type: Option<String>,
     pub capacity: Option<usize>
 }
