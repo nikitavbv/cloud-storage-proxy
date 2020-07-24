@@ -198,7 +198,7 @@ fn make_cache(caching: &Caching) -> Box<dyn GCSObjectCache + Send> {
     let caching_type= &caching.caching_type.as_ref().unwrap()[..];
 
     match caching_type {
-        "local" => Box::new(LocalCache::new(caching.capacity.unwrap())),
+        "local" => Box::new(LocalCache::new(caching.capacity, caching.ttl)),
         _ => Box::new(NoCaching::new()),
     }
 }

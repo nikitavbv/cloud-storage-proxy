@@ -39,7 +39,8 @@ pub struct BucketConfiguration {
 pub struct Caching {
     #[serde(rename="type")]
     pub caching_type: Option<String>,
-    pub capacity: Option<usize>
+    pub capacity: Option<usize>,
+    pub ttl: Option<u64>
 }
 
 impl Caching {
@@ -53,6 +54,10 @@ impl Caching {
 
         if other.capacity.is_some() {
             this_clone.capacity = other.capacity;
+        }
+
+        if other.ttl.is_some() {
+            this_clone.ttl = other.ttl;
         }
 
         this_clone

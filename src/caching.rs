@@ -29,12 +29,14 @@ impl GCSObjectCache for NoCaching {
 
 pub struct LocalCache {
     cache: TtlCache<String, GetObjectResult>,
+    ttl: Duration,
 }
 
 impl LocalCache {
-    pub fn new(capacity: usize) -> Self {
+    pub fn new(capacity: Option<usize>, ttl: Option<u64>) -> Self {
         LocalCache {
-            cache: TtlCache::new(capacity)
+            cache: TtlCache::new(capacity.unwrap_or(100)),
+            ttl: Duration::from_secs(ttl.unwrap_or(3600))
         }
     }
 }
@@ -44,7 +46,7 @@ impl GCSObjectCache for LocalCache {
         self.cache.insert(
             object_name.into(),
             object,
-            Duration::from_secs(60 * 60)
+            self.ttl.clone(),
         );
     }
 
