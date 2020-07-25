@@ -27,8 +27,7 @@ async fn main() -> std::io::Result<()> {
     let addr = ([0, 0, 0, 0], 8080).into();
 
     let config = Arc::new(load_config()?);
-    let client = GoogleCloudStorageClient::new(&service_account_key(&config)).await?;
-    let client = Arc::new(client);
+    let client = Arc::new(Mutex::new(GoogleCloudStorageClient::new(&service_account_key(&config)).await?));
     let cache = Arc::new(Mutex::new(HashMap::new()));
 
     let make_svc = make_service_fn(move |_| {
@@ -42,7 +41,7 @@ async fn main() -> std::io::Result<()> {
                 let client = client.clone();
                 let cache = cache.clone();
 
-                async move { proxy_service(_req, &config, &client, cache.clone()).await }
+                async move { proxy_service(_req, &config, client.clone(), cache.clone()).await }
             }))
         }
     });
@@ -59,8 +58,8 @@ async fn main() -> std::io::Result<()> {
 async fn proxy_service(
     req: Request<Body>,
     config: &Config,
-    gcs: &GoogleCloudStorageClient,
-    cache: Arc<Mutex<HashMap<String, Box<dyn GCSObjectCache + Send>>>>,
+    gcs: Arc<Mutex<GoogleCloudStorageClient>>,
+    cache_collection: Arc<Mutex<HashMap<String, Arc<Mutex<Box<dyn GCSObjectCache + Send>>>>>>,
 ) -> Result<Response<Body>, Infallible> {
     if req.method() != Method::GET {
         return Ok(Response::new("wrong method".into()));
@@ -86,7 +85,7 @@ async fn proxy_service(
         );
     }
 
-    let mut cache = cache.lock().await;
+    let mut cache = cache_collection.lock().await;
 
     let cache = match cache.get_mut(bucket_name) {
         Some(v) => v,
@@ -99,12 +98,13 @@ async fn proxy_service(
                 None => bucket.caching.clone()
                     .expect("expected caching to be set for bucket, as no caching is set globally")
             });
-            cache.insert(bucket_name.into(), new_cache);
+            cache.insert(bucket_name.into(), Arc::new(Mutex::new(new_cache)));
             cache.get_mut(bucket_name).unwrap()
         }
     };
 
-    let object = cache.get(&object_name);
+    let obj_cache = cache.lock().await;
+    let object = obj_cache.get(&object_name).await;
     let object = match object.clone() {
         Some(v) => {
             println!("cache hit");
@@ -112,11 +112,17 @@ async fn proxy_service(
         },
         None => {
             println!("cache miss");
-            let obj = match gcs.get_object(bucket_name, &object_name).await {
+
+            let mut cache = cache_collection.lock().await;
+            let cache = cache.get_mut(bucket_name).unwrap();
+
+            let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
                 Ok(v) => v,
-                Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, &gcs).await)
+                Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
             };
-            cache.put(&object_name, obj.clone());
+
+            let obj_cache = cache.lock().await;
+            obj_cache.put(&object_name, obj.clone()).await;
             obj
         }
     };
@@ -129,7 +135,7 @@ async fn response_for_gcs_client_error(
     bucket: &BucketConfiguration, 
     bucket_name: &str, 
     _object_name: &str,
-    gcs: &GoogleCloudStorageClient,
+    gcs: Arc<Mutex<GoogleCloudStorageClient>>,
 ) -> Response<Body> {
     let is_not_found = match err {
         GCSClientError::ObjectNotFound => true,
@@ -141,7 +147,7 @@ async fn response_for_gcs_client_error(
             .unwrap_or(&"404.html".to_string())
             .clone();
         
-        return match gcs.get_object(bucket_name, &not_found_object_name).await {
+        return match gcs.lock().await.get_object(bucket_name, &not_found_object_name).await {
             Ok(v) => response_for_object(v),
             Err(_) => match Response::builder()
                     .status(StatusCode::from_u16(404).unwrap())

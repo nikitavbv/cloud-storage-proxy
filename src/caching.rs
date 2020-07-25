@@ -1,10 +1,13 @@
+use async_trait::async_trait;
+
 use crate::gcs::GetObjectResult;
 use ttl_cache::TtlCache;
 use std::time::Duration;
 
+#[async_trait]
 pub trait GCSObjectCache {
-    fn put(&mut self, object_name: &str, object: GetObjectResult);
-    fn get(&self, object_name: &str) -> Option<&GetObjectResult>;
+    async fn put(&mut self, object_name: &str, object: GetObjectResult);
+    async fn get<'a>(&'a self, object_name: &str) -> Option<&'a GetObjectResult>;
 }
 
 pub struct NoCaching {
@@ -17,12 +20,13 @@ impl NoCaching {
     }
 }
 
+#[async_trait]
 impl GCSObjectCache for NoCaching {
-    fn put(&mut self, _object_name: &str, _object: GetObjectResult) {
+    async fn put(&mut self, _object_name: &str, _object: GetObjectResult) {
         // do nothing
     }
 
-    fn get(&self, _object_name: &str) -> Option<&GetObjectResult> {
+    async fn get<'a>(&'a self, _object_name: &str) -> Option<&'a GetObjectResult> {
         None
     }
 }
@@ -41,8 +45,9 @@ impl LocalCache {
     }
 }
 
+#[async_trait]
 impl GCSObjectCache for LocalCache {
-    fn put(&mut self, object_name: &str, object: GetObjectResult) {
+    async fn put(&mut self, object_name: &str, object: GetObjectResult) {
         self.cache.insert(
             object_name.into(),
             object,
@@ -50,7 +55,7 @@ impl GCSObjectCache for LocalCache {
         );
     }
 
-    fn get(&self, object_name: &str) -> Option<&GetObjectResult> {
+    async fn get<'a>(&'a self, object_name: &str) -> Option<&'a GetObjectResult> {
         self.cache.get(object_name.into())
     }
 }
