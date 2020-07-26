@@ -104,8 +104,10 @@ async fn proxy_service(
     };
 
     let obj_cache = cache.lock().await;
-    let object = obj_cache.get(&object_name).await;
-    let object = match object.clone() {
+    let object = obj_cache.get(&object_name).await.clone();
+    let cache_collection = cache_collection.clone();
+
+    let object = match object {
         Some(v) => {
             println!("cache hit");
             v.clone()
@@ -121,7 +123,7 @@ async fn proxy_service(
                 Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
             };
 
-            let obj_cache = cache.lock().await;
+            let mut obj_cache = cache.lock().await;
             obj_cache.put(&object_name, obj.clone()).await;
             obj
         }
