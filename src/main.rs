@@ -103,6 +103,8 @@ async fn proxy_service(
         }
     };
 
+    let cache = Arc::new(Mutex::new(NoCaching::new()));
+
     let obj_cache = cache.lock().await;
     let object = obj_cache.get(&object_name).await.clone();
     let cache_collection = cache_collection.clone();
