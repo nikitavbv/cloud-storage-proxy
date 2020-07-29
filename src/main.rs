@@ -112,12 +112,9 @@ async fn proxy_service(
 
     let object = match object {
         Some(v) => {
-            println!("cache hit");
             v.clone()
         },
         None => {
-            println!("cache miss");
-
             let mut cache = cache_collection.lock().await;
             let cache = cache.get_mut(bucket_name).unwrap();
 
