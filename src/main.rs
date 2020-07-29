@@ -15,6 +15,7 @@ use caching::{GCSObjectCache, LocalCache};
 use config::{Caching, BucketConfiguration};
 use tokio::sync::Mutex;
 use crate::caching::NoCaching;
+use openssl::hash::Hasher;
 
 mod config;
 mod gcs;
@@ -87,6 +88,8 @@ async fn proxy_service(
 
     let mut cache = cache_collection.lock().await;
 
+    let mut cache: HashMap<String, Arc<Mutex<Box<dyn GCSObjectCache + Send>>>> = HashMap::new();
+
     let cache = match cache.get_mut(bucket_name) {
         Some(v) => v,
         None => {
@@ -102,8 +105,6 @@ async fn proxy_service(
             cache.get_mut(bucket_name).unwrap()
         }
     };
-
-    let cache = Arc::new(Mutex::new(NoCaching::new()));
 
     let obj_cache = cache.lock().await;
     let object = obj_cache.get(&object_name).await.clone();
