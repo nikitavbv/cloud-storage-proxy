@@ -107,14 +107,14 @@ async fn proxy_service(
     };
 
     let obj_cache = cache.lock().await;
-    let object = obj_cache.get(&object_name).await.clone();
+    //let object = obj_cache.get(&object_name).await;
     let cache_collection = cache_collection.clone();
 
-    let object = match object {
+    /*let object = match object {
         Some(v) => {
             v.clone()
         },
-        None => {
+        None => {*/
             let mut cache = cache_collection.lock().await;
             let cache = cache.get_mut(bucket_name).unwrap();
 
@@ -125,9 +125,9 @@ async fn proxy_service(
 
             let mut obj_cache = cache.lock().await;
             obj_cache.put(&object_name, obj.clone()).await;
-            obj
-        }
-    };
+            //obj
+       // }
+    //};
 
     Ok(response_for_object(object))
 }
