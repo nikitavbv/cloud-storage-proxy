@@ -129,7 +129,7 @@ async fn proxy_service(
        // }
     //};
 
-    Ok(response_for_object(object))
+    Ok(response_for_object(obj))
 }
 
 async fn response_for_gcs_client_error(
