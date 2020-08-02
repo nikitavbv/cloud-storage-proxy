@@ -107,7 +107,7 @@ async fn proxy_service(
     };
 
     let obj_cache = cache.lock().await;
-    //let object = obj_cache.get(&object_name).await;
+    let object = obj_cache.get(&object_name).await;
 
     /*let object = match object {
         Some(v) => {
