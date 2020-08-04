@@ -7,7 +7,7 @@ use std::time::Duration;
 #[async_trait]
 pub trait GCSObjectCache {
     async fn put(&mut self, object_name: &str, object: GetObjectResult);
-    async fn get<'a>(self, object_name: &str) -> Option<&'a GetObjectResult>;
+    async fn get(&self, object_name: &str) -> Option<GetObjectResult>;
 }
 
 pub struct NoCaching {
@@ -26,7 +26,7 @@ impl GCSObjectCache for NoCaching {
         // do nothing
     }
 
-    async fn get<'a>(&'a self, _object_name: &str) -> Option<&'a GetObjectResult> {
+    async fn get(&self, _object_name: &str) -> Option<GetObjectResult> {
         None
     }
 }
@@ -55,7 +55,7 @@ impl GCSObjectCache for LocalCache {
         );
     }
 
-    async fn get<'a>(self, object_name: &str) -> Option<&'a GetObjectResult> {
-        self.cache.get(object_name.into())
+    async fn get(&self, object_name: &str) -> Option<GetObjectResult> {
+        self.cache.get(object_name.into()).map(|v| v.clone())
     }
 }

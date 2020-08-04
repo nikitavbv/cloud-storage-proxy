@@ -16,6 +16,8 @@ use config::{Caching, BucketConfiguration};
 use tokio::sync::Mutex;
 use crate::caching::NoCaching;
 use openssl::hash::Hasher;
+use chashmap::CHashMap;
+use std::future::Future;
 
 mod config;
 mod gcs;
@@ -29,7 +31,11 @@ async fn main() -> std::io::Result<()> {
 
     let config = Arc::new(load_config()?);
     let client = Arc::new(Mutex::new(GoogleCloudStorageClient::new(&service_account_key(&config)).await?));
-    let cache = Arc::new(Mutex::new(HashMap::new()));
+    let cache = Arc::new(CHashMap::new());
+
+    let cache_getter: Arc<Mutex<dyn Fn() -> <Box<GetObjectResult>>>>> = Arc::new(Mutex::new(|| {
+        cache.get("bucket").unwrap().get("object")
+    }));
 
     let make_svc = make_service_fn(move |_| {
         let config = config.clone();
@@ -41,8 +47,9 @@ async fn main() -> std::io::Result<()> {
                 let config = config.clone();
                 let client = client.clone();
                 let cache = cache.clone();
+                let cg = cache_getter.clone();
 
-                async move { proxy_service(_req, &config, client.clone(), cache.clone()).await }
+                async move { proxy_service(_req, &config, client.clone(), cache.clone(), cache_getter.clone()).await }
             }))
         }
     });
@@ -60,9 +67,10 @@ async fn proxy_service(
     req: Request<Body>,
     config: &Config,
     gcs: Arc<Mutex<GoogleCloudStorageClient>>,
-    cache_collection: Arc<Mutex<HashMap<String, Arc<Mutex<Box<dyn GCSObjectCache + Send>>>>>>,
-) -> Result<Response<Body>, Infallible> {
-    if req.method() != Method::GET {
+    // cache: Arc<CHashMap<String, Box<dyn GCSObjectCache + Send>>>,
+    cache: Arc<Mutex<Fn(String) -> impl Future<Box<GetObjectResult>>>>
+) -> Result<Response<Body>, String> {
+    /*if req.method() != Method::GET {
         return Ok(Response::new("wrong method".into()));
     }
 
@@ -86,10 +94,6 @@ async fn proxy_service(
         );
     }
 
-    let mut cache = cache_collection.lock().await;
-
-    let mut cache: HashMap<String, Arc<Mutex<Box<dyn GCSObjectCache + Send>>>> = HashMap::new();
-
     let cache = match cache.get_mut(bucket_name) {
         Some(v) => v,
         None => {
@@ -101,34 +105,34 @@ async fn proxy_service(
                 None => bucket.caching.clone()
                     .expect("expected caching to be set for bucket, as no caching is set globally")
             });
-            cache.insert(bucket_name.into(), Arc::new(Mutex::new(new_cache)));
+            cache.insert(bucket_name.into(), new_cache);
             cache.get_mut(bucket_name).unwrap()
         }
-    };
+    };*/
 
-    let obj_cache = Box::new(cache.lock().await);
-    let object = obj_cache.get(&object_name).await;
 
-    /*let object = match object {
-        Some(v) => {
-            v.clone()
-        },
-        None => {*/
-            let mut cache = cache_collection.lock().await;
-            let cache = cache.get_mut(bucket_name).unwrap();
+    //async move {
+    let cache = cache.get("bucket").unwrap();
+    let object = cache.get("some_key").await;
 
-            let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
-                Ok(v) => v,
-                Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
-            };
+        /*let object = match object {
+      Some(v) => {
+      v.clone()
+      },z
+      None => {*/
 
-            let mut obj_cache = cache.lock().await;
-            obj_cache.put(&object_name, obj.clone()).await;
-            //obj
-       // }
-    //};
+        //let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
+        //    Ok(v) => v,
+        //    Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
+        //};
 
-    Ok(response_for_object(obj))
+        //obj_cache.put(&object_name, obj.clone()).await;
+        //obj
+        // }
+        //};
+
+        Err("oops".into())
+    //}.await
 }
 
 async fn response_for_gcs_client_error(
