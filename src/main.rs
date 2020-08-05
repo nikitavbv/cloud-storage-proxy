@@ -33,10 +33,6 @@ async fn main() -> std::io::Result<()> {
     let client = Arc::new(Mutex::new(GoogleCloudStorageClient::new(&service_account_key(&config)).await?));
     let cache = Arc::new(CHashMap::new());
 
-    let cache_getter: Arc<Mutex<dyn Fn() -> <Box<GetObjectResult>>>>> = Arc::new(Mutex::new(|| {
-        cache.get("bucket").unwrap().get("object")
-    }));
-
     let make_svc = make_service_fn(move |_| {
         let config = config.clone();
         let client = client.clone();
@@ -47,9 +43,8 @@ async fn main() -> std::io::Result<()> {
                 let config = config.clone();
                 let client = client.clone();
                 let cache = cache.clone();
-                let cg = cache_getter.clone();
 
-                async move { proxy_service(_req, &config, client.clone(), cache.clone(), cache_getter.clone()).await }
+                async move { proxy_service(_req, &config, client.clone(), cache.clone()).await }
             }))
         }
     });
@@ -67,8 +62,7 @@ async fn proxy_service(
     req: Request<Body>,
     config: &Config,
     gcs: Arc<Mutex<GoogleCloudStorageClient>>,
-    // cache: Arc<CHashMap<String, Box<dyn GCSObjectCache + Send>>>,
-    cache: Arc<Mutex<Fn(String) -> impl Future<Box<GetObjectResult>>>>
+    cache: Arc<CHashMap<String, Arc<Mutex<Box<dyn GCSObjectCache + Send>>>>>,
 ) -> Result<Response<Body>, String> {
     /*if req.method() != Method::GET {
         return Ok(Response::new("wrong method".into()));
@@ -113,9 +107,9 @@ async fn proxy_service(
 
     //async move {
     let cache = cache.get("bucket").unwrap();
-    let object = cache.get("some_key").await;
+    let object = cache.lock_owned().await.get("some_key").await;
 
-        /*let object = match object {
+        /*let object = match object { 
       Some(v) => {
       v.clone()
       },z
