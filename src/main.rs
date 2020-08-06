@@ -18,6 +18,7 @@ use crate::caching::NoCaching;
 use openssl::hash::Hasher;
 use chashmap::CHashMap;
 use std::future::Future;
+use actix::System;
 
 mod config;
 mod gcs;
@@ -26,6 +27,9 @@ mod caching;
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
+
+    let system = System::new("cloud_storage_proxy");
+    system.run()?;
 
     let addr = ([0, 0, 0, 0], 8080).into();
 
@@ -109,7 +113,7 @@ async fn proxy_service(
     let cache = cache.get("bucket").unwrap();
     let object = cache.lock_owned().await.get("some_key").await;
 
-        /*let object = match object { 
+        /*let object = match object {
       Some(v) => {
       v.clone()
       },z
