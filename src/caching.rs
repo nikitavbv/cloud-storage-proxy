@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::gcs::GetObjectResult;
 use ttl_cache::TtlCache;
 use std::time::Duration;
-use actix::Actor;
+use actix::{Actor, Context};
 
 #[async_trait]
 pub trait GCSObjectCache {
@@ -61,7 +61,7 @@ impl GCSObjectCache for LocalCache {
     }
 }
 
-struct LocalCacheActor;
+pub struct LocalCacheActor;
 
 impl Actor for LocalCacheActor {
     type Context = Context<Self>;

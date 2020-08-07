@@ -11,7 +11,7 @@ use crate::gcs::{GoogleCloudStorageClient, GCSClientError};
 use std::fs;
 use std::{sync::Arc, env::var, collections::HashMap};
 use gcs::GetObjectResult;
-use caching::{GCSObjectCache, LocalCache};
+use caching::{GCSObjectCache, LocalCache, LocalCacheActor};
 use config::{Caching, BucketConfiguration};
 use tokio::sync::Mutex;
 use crate::caching::NoCaching;
@@ -24,14 +24,16 @@ mod config;
 mod gcs;
 mod caching;
 
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
+fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let system = System::new("cloud_storage_proxy");
+
+    LocalCacheActor{}.start();
+
     system.run()?;
 
-    let addr = ([0, 0, 0, 0], 8080).into();
+    /*let addr = ([0, 0, 0, 0], 8080).into();
 
     let config = Arc::new(load_config()?);
     let client = Arc::new(Mutex::new(GoogleCloudStorageClient::new(&service_account_key(&config)).await?));
@@ -57,7 +59,7 @@ async fn main() -> std::io::Result<()> {
 
     if let Err(e) = server.await {
         eprintln!("server error: {}", e);
-    }
+    }*/
 
     Ok(())
 }
@@ -111,7 +113,7 @@ async fn proxy_service(
 
     //async move {
     let cache = cache.get("bucket").unwrap();
-    let object = cache.lock_owned().await.get("some_key").await;
+    //let object = cache.lock_owned().await.get("some_key").await;
 
         /*let object = match object {
       Some(v) => {
