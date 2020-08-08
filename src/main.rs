@@ -11,27 +11,32 @@ use crate::gcs::{GoogleCloudStorageClient, GCSClientError};
 use std::fs;
 use std::{sync::Arc, env::var, collections::HashMap};
 use gcs::GetObjectResult;
-use caching::{GCSObjectCache, LocalCache, LocalCacheActor};
+use crate::caching::caching::{GCSObjectCache, LocalCache, NoCaching};
+use crate::caching::actor::{CachingActor, GetCacheEntry};
 use config::{Caching, BucketConfiguration};
 use tokio::sync::Mutex;
-use crate::caching::NoCaching;
 use openssl::hash::Hasher;
 use chashmap::CHashMap;
 use std::future::Future;
 use actix::System;
+use actix::prelude::*;
 
 mod config;
 mod gcs;
 mod caching;
 
-fn main() -> std::io::Result<()> {
+#[actix_rt::main]
+async fn main() {
     env_logger::init();
 
-    let system = System::new("cloud_storage_proxy");
+    let caching_addr = CachingActor {}.start();
 
-    LocalCacheActor{}.start();
+    let test_message = GetCacheEntry {
+        bucket: "test".into(),
+        key: "key".into()
+    };
 
-    system.run()?;
+    println!("result is: {:?}", caching_addr.send(test_message).await);
 
     /*let addr = ([0, 0, 0, 0], 8080).into();
 
@@ -60,8 +65,6 @@ fn main() -> std::io::Result<()> {
     if let Err(e) = server.await {
         eprintln!("server error: {}", e);
     }*/
-
-    Ok(())
 }
 
 async fn proxy_service(

@@ -2,8 +2,8 @@ use async_trait::async_trait;
 
 use crate::gcs::GetObjectResult;
 use ttl_cache::TtlCache;
-use std::time::Duration;
-use actix::{Actor, Context};
+use std::{thread, time::{self, Duration}};
+use actix::{Actor, Context, Message, Handler};
 
 #[async_trait]
 pub trait GCSObjectCache {
@@ -58,15 +58,5 @@ impl GCSObjectCache for LocalCache {
 
     async fn get(&self, object_name: &str) -> Option<GetObjectResult> {
         self.cache.get(object_name.into()).map(|v| v.clone())
-    }
-}
-
-pub struct LocalCacheActor;
-
-impl Actor for LocalCacheActor {
-    type Context = Context<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        println!("local cache actor is alive");
     }
 }
