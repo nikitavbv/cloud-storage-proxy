@@ -11,12 +11,17 @@ pub struct GetCacheEntry {
     pub key: String
 }
 
+#[derive(Display, Debug)]
+pub struct GetCacheEntryResponse {
+    pub body: &[u8]
+}
+
 impl Message for PutCacheEntry {
     type Result = ();
 }
 
 impl Message for GetCacheEntry {
-    type Result = Vec<u8>;
+    type Result = GetCacheEntryResponse;
 }
 
 pub struct CachingActor;
@@ -38,10 +43,12 @@ impl Handler<PutCacheEntry> for CachingActor {
 }
 
 impl Handler<GetCacheEntry> for CachingActor {
-    type Result = Box<Vec<u8>>;
+    type Result = GetCacheEntryResponse;
 
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
         println!("get cache entry message handle");
-        Box::new(vec![])
+        GetCacheEntryResponse {
+            body: vec![]
+        }
     }
 }
