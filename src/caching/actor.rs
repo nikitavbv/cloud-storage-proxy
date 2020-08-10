@@ -1,27 +1,25 @@
-use actix::{Context, Handler, Actor, Message};
+use std::fmt::Display;
+use actix::{Context, Handler, Actor};
+use actix_derive::{Message, MessageResponse};
 
+#[derive(Message)]
+#[rtype(result = "()")]
 pub struct PutCacheEntry {
     pub bucket: String,
     pub key: String,
     pub body: Vec<u8>
 }
 
+#[derive(Message)]
+#[rtype(result = "GetCacheEntryResponse")]
 pub struct GetCacheEntry {
     pub bucket: String,
     pub key: String
 }
 
-#[derive(Display, Debug)]
+#[derive(MessageResponse, Debug)]
 pub struct GetCacheEntryResponse {
-    pub body: &[u8]
-}
-
-impl Message for PutCacheEntry {
-    type Result = ();
-}
-
-impl Message for GetCacheEntry {
-    type Result = GetCacheEntryResponse;
+    pub body: Vec<u8>
 }
 
 pub struct CachingActor;
