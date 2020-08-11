@@ -1,6 +1,14 @@
 use std::fmt::Display;
 use actix::{Context, Handler, Actor};
 use actix_derive::{Message, MessageResponse};
+use ttl_cache::TtlCache;
+use crate::gcs::GetObjectResult;
+use std::time::Duration;
+
+#[derive(MessageResponse, Debug, Clone)]
+pub struct CacheEntry {
+    body: Vec<u8>
+}
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -11,18 +19,25 @@ pub struct PutCacheEntry {
 }
 
 #[derive(Message)]
-#[rtype(result = "GetCacheEntryResponse")]
+#[rtype(result = "Option<CacheEntry>")]
 pub struct GetCacheEntry {
     pub bucket: String,
     pub key: String
 }
 
-#[derive(MessageResponse, Debug)]
-pub struct GetCacheEntryResponse {
-    pub body: Vec<u8>
+pub struct CachingActor {
+    cache: TtlCache<String, CacheEntry>,
+    ttl: Duration,
 }
 
-pub struct CachingActor;
+impl CachingActor {
+    pub fn new(capacity: Option<usize>, ttl: Option<u64>) -> Self {
+        Self {
+            cache: TtlCache::new(capacity.unwrap_or(100)),
+            ttl: Duration::from_secs(ttl.unwrap_or(3600))
+        }
+    }
+}
 
 impl Actor for CachingActor {
     type Context = Context<Self>;
@@ -36,17 +51,20 @@ impl Handler<PutCacheEntry> for CachingActor {
     type Result = ();
 
     fn handle(&mut self, msg: PutCacheEntry, _: &mut Context<Self>) -> Self::Result {
-        println!("put cache entry message handle");
+        self.cache.insert(
+            msg.key.into(),
+            CacheEntry {
+                body: msg.body,
+            },
+            self.ttl.clone(),
+        );
     }
 }
 
 impl Handler<GetCacheEntry> for CachingActor {
-    type Result = GetCacheEntryResponse;
+    type Result = Option<CacheEntry>;
 
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
-        println!("get cache entry message handle");
-        GetCacheEntryResponse {
-            body: vec![]
-        }
+        self.cache.get(&msg.key).map(|v| v.clone())
     }
 }

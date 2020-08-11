@@ -29,7 +29,7 @@ mod caching;
 async fn main() {
     env_logger::init();
 
-    let caching_addr = CachingActor {}.start();
+    let caching_addr = CachingActor::new(Some(100), None).start();
 
     let test_message = GetCacheEntry {
         bucket: "test".into(),
