@@ -4,6 +4,7 @@ use actix_derive::{Message, MessageResponse};
 use ttl_cache::TtlCache;
 use crate::gcs::GetObjectResult;
 use std::time::Duration;
+use std::future::Future;
 
 #[derive(MessageResponse, Debug, Clone)]
 pub struct CacheEntry {
@@ -65,6 +66,10 @@ impl Handler<GetCacheEntry> for CachingActor {
     type Result = Option<CacheEntry>;
 
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
-        self.cache.get(&msg.key).map(|v| v.clone())
+        let f = async move {
+            self.cache.get(&msg.key).map(|v| v.clone())
+        };
+
+        actix::spawn(f)
     }
 }
