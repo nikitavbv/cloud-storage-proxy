@@ -1,10 +1,12 @@
 use std::fmt::Display;
-use actix::{Context, Handler, Actor};
+use actix::{Context, Handler, Actor, ResponseFuture};
 use actix_derive::{Message, MessageResponse};
 use ttl_cache::TtlCache;
 use crate::gcs::GetObjectResult;
 use std::time::Duration;
-use std::future::Future;
+use std::{pin::Pin, future::Future, convert::Infallible};
+use actix::prelude::*;
+use std::io;
 
 #[derive(MessageResponse, Debug, Clone)]
 pub struct CacheEntry {
@@ -19,11 +21,13 @@ pub struct PutCacheEntry {
     pub body: Vec<u8>
 }
 
-#[derive(Message)]
-#[rtype(result = "Option<CacheEntry>")]
 pub struct GetCacheEntry {
     pub bucket: String,
     pub key: String
+}
+
+impl Message for GetCacheEntry {
+    type Result = io::Result<u32>;
 }
 
 pub struct CachingActor {
@@ -37,6 +41,10 @@ impl CachingActor {
             cache: TtlCache::new(capacity.unwrap_or(100)),
             ttl: Duration::from_secs(ttl.unwrap_or(3600))
         }
+    }
+
+    async fn get_key(&mut self, msg: GetCacheEntry) -> Option<CacheEntry> {
+        self.cache.get(&msg.key).map(|v| v.clone())
     }
 }
 
@@ -62,14 +70,15 @@ impl Handler<PutCacheEntry> for CachingActor {
     }
 }
 
+#[derive(Debug)]
+pub struct MyStruct {}
+
 impl Handler<GetCacheEntry> for CachingActor {
-    type Result = Option<CacheEntry>;
+    type Result = ResponseFuture<Result<u32, io::Error>>;
 
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
-        let f = async move {
-            self.cache.get(&msg.key).map(|v| v.clone())
-        };
-
-        actix::spawn(f)
+        Box::pin(async move {
+            Ok(32 as u32)
+        })
     }
 }

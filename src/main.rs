@@ -20,6 +20,7 @@ use chashmap::CHashMap;
 use std::future::Future;
 use actix::System;
 use actix::prelude::*;
+use caching::actor::MyStruct;
 
 mod config;
 mod gcs;
@@ -36,7 +37,9 @@ async fn main() {
         key: "key".into()
     };
 
-    println!("result is: {:?}", caching_addr.send(test_message).await);
+    let result = caching_addr.send(test_message).await;
+
+    println!("result is: {:?}", result);
 
     /*let addr = ([0, 0, 0, 0], 8080).into();
 
