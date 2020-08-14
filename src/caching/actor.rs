@@ -21,13 +21,11 @@ pub struct PutCacheEntry {
     pub body: Vec<u8>
 }
 
+#[derive(Message)]
+#[rtype(result = "io::Result<u32>")]
 pub struct GetCacheEntry {
     pub bucket: String,
     pub key: String
-}
-
-impl Message for GetCacheEntry {
-    type Result = io::Result<u32>;
 }
 
 pub struct CachingActor {
