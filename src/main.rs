@@ -11,8 +11,9 @@ use crate::gcs::{GoogleCloudStorageClient, GCSClientError};
 use std::fs;
 use std::{sync::Arc, env::var, collections::HashMap};
 use gcs::GetObjectResult;
-use crate::caching::caching::{GCSObjectCache, LocalCache, NoCaching};
-use crate::caching::actor::{CachingActor, GetCacheEntry};
+use crate::caching::caching::GCSObjectCache;
+use crate::caching::local::LocalCache;
+use crate::caching::messages::GetCacheEntry;
 use config::{Caching, BucketConfiguration};
 use tokio::sync::Mutex;
 use openssl::hash::Hasher;
@@ -20,7 +21,6 @@ use chashmap::CHashMap;
 use std::future::Future;
 use actix::System;
 use actix::prelude::*;
-use caching::actor::MyStruct;
 
 mod config;
 mod gcs;
@@ -30,7 +30,7 @@ mod caching;
 async fn main() {
     env_logger::init();
 
-    let caching_addr = CachingActor::new(Some(100), None).start();
+    let caching_addr = LocalCache::new(Some(100), None).start();
 
     let test_message = GetCacheEntry {
         bucket: "test".into(),
@@ -211,11 +211,11 @@ fn get_service_account_key_file_name() -> String {
     var("SERVICE_ACCOUNT_KEY_FILE").unwrap_or("service_account_key.json".into())
 }
 
-fn make_cache(caching: &Caching) -> Box<dyn GCSObjectCache + Send> {
+/*fn make_cache(caching: &Caching) -> Box<dyn GCSObjectCache + Send> {
     let caching_type= &caching.caching_type.as_ref().unwrap()[..];
 
     match caching_type {
         "local" => Box::new(LocalCache::new(caching.capacity, caching.ttl)),
         _ => Box::new(NoCaching::new()),
     }
-}
+}*/
