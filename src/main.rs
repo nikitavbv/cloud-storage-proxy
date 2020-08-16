@@ -39,7 +39,7 @@ async fn main() {
 
     let result = caching_addr.send(test_message).await;
 
-    println!("result is: {:?}", result);
+    println!("result is: {}", result.is_ok());
 
     /*let addr = ([0, 0, 0, 0], 8080).into();
 

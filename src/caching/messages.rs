@@ -6,12 +6,32 @@ use actix_derive::{Message, MessageResponse};
 pub struct PutCacheEntry {
     pub bucket: String,
     pub key: String,
-    pub body: Vec<u8>
+    pub entry: CacheEntry
 }
 
 #[derive(Message)]
-#[rtype(result = "io::Result<u32>")]
+#[rtype(result = "io::Result<CacheEntry>")]
 pub struct GetCacheEntry {
     pub bucket: String,
     pub key: String
+}
+
+#[derive(Clone)]
+pub struct CacheEntry {
+    body: Vec<u8>
+}
+
+impl CacheEntry {
+
+    pub fn new() -> Self {
+        CacheEntry {
+            body: Vec::new()
+        }
+    }
+
+    pub fn from_body(body: Vec<u8>) -> Self {
+        CacheEntry {
+            body
+        }
+    }
 }

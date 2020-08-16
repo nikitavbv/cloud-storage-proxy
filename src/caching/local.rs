@@ -6,6 +6,7 @@ use std::time::Duration;
 use std::{pin::Pin, future::Future, convert::Infallible};
 use actix::prelude::*;
 use std::io;
+use crate::caching::messages::{CacheEntry, GetCacheEntry, PutCacheEntry};
 
 pub struct LocalCache {
     cache: TtlCache<String, CacheEntry>,
@@ -21,7 +22,10 @@ impl LocalCache {
     }
 
     async fn get_key(&mut self, msg: GetCacheEntry) -> Option<CacheEntry> {
-        self.cache.get(&msg.key).map(|v| v.clone())
+        match self.cache.get(&msg.key) {
+            Some(v) => Some(v.clone()),
+            None => None
+        }
     }
 }
 
@@ -39,20 +43,18 @@ impl Handler<PutCacheEntry> for LocalCache {
     fn handle(&mut self, msg: PutCacheEntry, _: &mut Context<Self>) -> Self::Result {
         self.cache.insert(
             msg.key.into(),
-            CacheEntry {
-                body: msg.body,
-            },
+            CacheEntry::from_body(msg.body),
             self.ttl.clone(),
         );
     }
 }
 
-impl Handler<GetCacheEntry> for CachingActor {
-    type Result = ResponseFuture<Result<u32, io::Error>>;
+impl Handler<GetCacheEntry> for LocalCache {
+    type Result = ResponseFuture<Result<CacheEntry, io::Error>>;
 
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
         Box::pin(async move {
-            Ok(32 as u32)
+            Ok(CacheEntry::new())
         })
     }
 }
