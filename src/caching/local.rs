@@ -43,7 +43,7 @@ impl Handler<PutCacheEntry> for LocalCache {
     fn handle(&mut self, msg: PutCacheEntry, _: &mut Context<Self>) -> Self::Result {
         self.cache.insert(
             msg.key.into(),
-            CacheEntry::from_body(msg.body),
+            msg.entry,
             self.ttl.clone(),
         );
     }
