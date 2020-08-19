@@ -334,10 +334,12 @@ dependencies = [
  "async-trait",
  "chashmap",
  "custom_error",
+ "dns-lookup",
  "env_logger",
  "hyper",
  "log",
  "openssl",
+ "redis-async",
  "reqwest",
  "serde",
  "serde_derive",
@@ -433,6 +435,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "dns-lookup"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cbea23c15f7e685a7ad01c994407f3849fa7c88556aaafe4054215b6df93f78"
+dependencies = [
+ "libc",
+ "socket2",
+ "winapi 0.3.8",
 ]
 
 [[package]]
@@ -1407,6 +1420,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "678054eb77286b51581ba43620cc911abf02758c91f93f479767aed0f90458b2"
 dependencies = [
  "rand_core 0.3.1",
+]
+
+[[package]]
+name = "redis-async"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32c2f29b2a86ac0be0ba2680118d8280b8c7743a6fb2c11d2d04bb9ea41b94f1"
+dependencies = [
+ "bytes",
+ "futures-channel",
+ "futures-sink",
+ "futures-util",
+ "log",
+ "tokio",
+ "tokio-util 0.3.1",
 ]
 
 [[package]]
