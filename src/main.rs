@@ -11,7 +11,6 @@ use crate::gcs::{GoogleCloudStorageClient, GCSClientError};
 use std::fs;
 use std::{sync::Arc, env::var, collections::HashMap};
 use gcs::GetObjectResult;
-use crate::caching::caching::GCSObjectCache;
 use crate::caching::local::LocalCache;
 use crate::caching::messages::GetCacheEntry;
 use config::{Caching, BucketConfiguration};
@@ -69,7 +68,7 @@ async fn main() {
         eprintln!("server error: {}", e);
     }*/
 }
-
+/*
 async fn proxy_service(
     req: Request<Body>,
     config: &Config,
@@ -139,7 +138,7 @@ async fn proxy_service(
 
         Err("oops".into())
     //}.await
-}
+}*/
 
 async fn response_for_gcs_client_error(
     err: GCSClientError, 

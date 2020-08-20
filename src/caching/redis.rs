@@ -7,8 +7,11 @@ use std::{pin::Pin, future::Future, convert::Infallible};
 use actix::prelude::*;
 use std::io;
 use crate::caching::messages::{CacheEntry, GetCacheEntry, PutCacheEntry};
+use custom_error::custom_error;
+use std::net::AddrParseError;
 
 custom_error!{pub RedisCacheError
+    FailedToParseAddress {source: AddrParseError} = "failed to parse adress: {source}",
     FailedToCreateRedisClient = "failed to create redis client"
 }
 
@@ -18,18 +21,13 @@ pub struct RedisCache {
 }
 
 impl RedisCache {
-    pub fn new(ttl: Option<u64>) -> Result<Self, RedisCacheError> {
-        let address = format!("{}:{}", ip_addr, redis_port())
+    pub async fn new(host: String, port: u16, ttl: Option<u64>) -> Result<Self, RedisCacheError> {
+        let address = format!("{}:{}", &host, &port)
             .parse()
-            .map_err(|source| RedisClientError::FailedToParseAddress { source })?;
+            .map_err(|source| RedisCacheError::FailedToParseAddress { source })?;
 
-        let client    async fn get_key(&mut self, msg: GetCacheEntry) -> Option<CacheEntry> {
-        match self.cache.get(&msg.key) {
-            Some(v) => Some(v.clone()),
-            None => None
-        }
-    } = redis_async::client::paired_connect(&address).await
-            .map_err(|_| RedisClientError::FailedToCreateRedisClient)?;
+        let client = redis_async::client::paired_connect(&address).await
+            .map_err(|_| RedisCacheError::FailedToCreateRedisClient)?;
 
         Ok(Self {
             client,
@@ -54,7 +52,7 @@ impl Handler<PutCacheEntry> for RedisCache {
     }
 }
 
-impl Handler<GetCacheEntry> for Redis {
+impl Handler<GetCacheEntry> for RedisCache {
     type Result = ResponseFuture<Result<CacheEntry, io::Error>>;
 
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
