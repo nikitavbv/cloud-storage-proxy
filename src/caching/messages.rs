@@ -1,5 +1,6 @@
 use std::io;
 use actix_derive::{Message, MessageResponse};
+use serde::{Serialize, Deserialize};
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -16,7 +17,7 @@ pub struct GetCacheEntry {
     pub key: String
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct CacheEntry {
     body: Vec<u8>
 }
