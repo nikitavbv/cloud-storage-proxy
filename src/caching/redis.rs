@@ -11,9 +11,12 @@ use custom_error::custom_error;
 use std::net::AddrParseError;
 
 custom_error!{pub RedisCacheError
-    FailedToParseAddress {source: AddrParseError} = "failed to parse adress: {source}",
+    FailedToParseAddress {source: AddrParseError} = "failed to parse address: {source}",
+    FailedToSerialize {source: serde_json::Error} = "failed to serialize entry: {source}",
     FailedToCreateRedisClient = "failed to create redis client"
 }
+
+const KEY_PREFIX: &'static str = "cloud_storage_proxy";
 
 pub struct RedisCache {
     client: redis_async::client::PairedConnection,
@@ -45,10 +48,13 @@ impl Actor for RedisCache {
 }
 
 impl Handler<PutCacheEntry> for RedisCache {
-    type Result = ();
+    type Result = Result<(), RedisCacheError>;
 
     fn handle(&mut self, msg: PutCacheEntry, _: &mut Context<Self>) -> Self::Result {
-        // TODO: implement this
+        let key = format!("{}:{}:{}", KEY_PREFIX, msg.bucket, msg.key);
+        let entry = serde_json::to_string(&msg.entry)?;
+        connection.send_and_forget(resp_array!["SET", key, entry]);
+        connection.send_and_forget(resp_array!["EXPIRE", key, format!("{}", &self.ttl)]);
     }
 }
 
