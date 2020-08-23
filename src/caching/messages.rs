@@ -1,9 +1,15 @@
 use std::io;
 use actix_derive::{Message, MessageResponse};
 use serde::{Serialize, Deserialize};
+use custom_error::custom_error;
+
+custom_error! {pub CacheError
+    FailedToCreateCacheClient {source: String} = "failed to create cache client: {}",
+    SerdeError {source: serde_json::Error} = "failed to serialize/deserialize entry: {source}"
+}
 
 #[derive(Message)]
-#[rtype(result = "()")]
+#[rtype(result = "Result<(), CacheError>")]
 pub struct PutCacheEntry {
     pub bucket: String,
     pub key: String,
@@ -11,7 +17,7 @@ pub struct PutCacheEntry {
 }
 
 #[derive(Message)]
-#[rtype(result = "io::Result<CacheEntry>")]
+#[rtype(result = "Result<CacheEntry, CacheError>")]
 pub struct GetCacheEntry {
     pub bucket: String,
     pub key: String
