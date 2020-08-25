@@ -6,15 +6,10 @@ use std::time::Duration;
 use std::{pin::Pin, future::Future, convert::Infallible};
 use actix::prelude::*;
 use std::io;
-use crate::caching::messages::{CacheEntry, GetCacheEntry, PutCacheEntry};
+use crate::caching::messages::{CacheEntry, GetCacheEntry, PutCacheEntry, CacheError};
 use custom_error::custom_error;
 use std::net::AddrParseError;
-
-custom_error!{pub RedisCacheError
-    FailedToParseAddress {source: AddrParseError} = "failed to parse address: {source}",
-    FailedToSerialize {source: serde_json::Error} = "failed to serialize entry: {source}",
-    FailedToCreateRedisClient = "failed to create redis client"
-}
+use redis_async::resp_array;
 
 const KEY_PREFIX: &'static str = "cloud_storage_proxy";
 
@@ -27,10 +22,10 @@ impl RedisCache {
     pub async fn new(host: String, port: u16, ttl: Option<u64>) -> Result<Self, RedisCacheError> {
         let address = format!("{}:{}", &host, &port)
             .parse()
-            .map_err(|source| RedisCacheError::FailedToParseAddress { source })?;
+            .map_err(|source| CacheError::FailedToCreateCacheClient { source: format!("failed to parse address: {}", source) })?;
 
         let client = redis_async::client::paired_connect(&address).await
-            .map_err(|_| RedisCacheError::FailedToCreateRedisClient)?;
+            .map_err(|_| CacheError::FailedToCreateCacheClient { source: "Failed to create redis client".to_string() })?;
 
         Ok(Self {
             client,
@@ -48,20 +43,26 @@ impl Actor for RedisCache {
 }
 
 impl Handler<PutCacheEntry> for RedisCache {
-    type Result = Result<(), RedisCacheError>;
+    type Result = Result<(), CacheError>;
 
     fn handle(&mut self, msg: PutCacheEntry, _: &mut Context<Self>) -> Self::Result {
         let key = format!("{}:{}:{}", KEY_PREFIX, msg.bucket, msg.key);
         let entry = serde_json::to_string(&msg.entry)?;
-        connection.send_and_forget(resp_array!["SET", key, entry]);
-        connection.send_and_forget(resp_array!["EXPIRE", key, format!("{}", &self.ttl)]);
+        self.client.send_and_forget(resp_array!["SET", key, entry]);
+        self.client.send_and_forget(resp_array!["EXPIRE", key, format!("{}", &self.ttl)]);
+        Ok(())
     }
 }
 
 impl Handler<GetCacheEntry> for RedisCache {
-    type Result = ResponseFuture<Result<CacheEntry, io::Error>>;
+    type Result = ResponseFuture<Result<CacheEntry, CacheError>>;
 
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
-        // TODO: implement this
+        Box::pin(async move {
+            let key = format!("{}:{}:{}", KEY_PREFIX, msg.bucket, msg.key);
+            let entry_str = self.client.send::<String>(resp_array!["GET", key]).await?;
+            let entry = serde_json::from_str(&entry_str)?;
+            Ok(entry)
+        })
     }
 }
