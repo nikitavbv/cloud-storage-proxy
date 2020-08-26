@@ -38,7 +38,7 @@ impl Actor for LocalCache {
 }
 
 impl Handler<PutCacheEntry> for LocalCache {
-    type Result = ();
+    type Result = Result<(), CacheError>;
 
     fn handle(&mut self, msg: PutCacheEntry, _: &mut Context<Self>) -> Self::Result {
         self.cache.insert(
@@ -46,11 +46,12 @@ impl Handler<PutCacheEntry> for LocalCache {
             msg.entry,
             self.ttl.clone(),
         );
+        Ok(())
     }
 }
 
 impl Handler<GetCacheEntry> for LocalCache {
-    type Result = ResponseFuture<Result<CacheEntry, io::Error>>;
+    type Result = ResponseFuture<Result<CacheEntry, CacheError>>;
 
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
         Box::pin(async move {
