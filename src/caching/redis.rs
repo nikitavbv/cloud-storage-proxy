@@ -10,22 +10,24 @@ use crate::caching::messages::{CacheEntry, GetCacheEntry, PutCacheEntry, CacheEr
 use custom_error::custom_error;
 use std::net::AddrParseError;
 use redis_async::resp_array;
+use tokio::sync::Mutex;
+use std::sync::Arc;
 
 const KEY_PREFIX: &'static str = "cloud_storage_proxy";
 
 pub struct RedisCache {
-    client: redis_async::client::PairedConnection,
+    client: Arc<Mutex<redis_async::client::PairedConnection>>,
     ttl: u64,
 }
 
 impl RedisCache {
-    pub async fn new(host: String, port: u16, ttl: Option<u64>) -> Result<Self, RedisCacheError> {
+    pub async fn new(host: String, port: u16, ttl: Option<u64>) -> Result<Self, CacheError> {
         let address = format!("{}:{}", &host, &port)
             .parse()
-            .map_err(|source| CacheError::FailedToCreateCacheClient { source: format!("failed to parse address: {}", source) })?;
+            .map_err(|source| CacheError::FailedToCreateCacheClient { reason: format!("failed to parse address: {}", source) })?;
 
-        let client = redis_async::client::paired_connect(&address).await
-            .map_err(|_| CacheError::FailedToCreateCacheClient { source: "Failed to create redis client".to_string() })?;
+        let client = Arc::new(Mutex::new(redis_async::client::paired_connect(&address).await
+            .map_err(|_| CacheError::FailedToCreateCacheClient { reason: "Failed to create redis client".to_string() })?));
 
         Ok(Self {
             client,
@@ -43,14 +45,23 @@ impl Actor for RedisCache {
 }
 
 impl Handler<PutCacheEntry> for RedisCache {
-    type Result = Result<(), CacheError>;
+    type Result = ResponseFuture<Result<(), CacheError>>;
 
     fn handle(&mut self, msg: PutCacheEntry, _: &mut Context<Self>) -> Self::Result {
-        let key = format!("{}:{}:{}", KEY_PREFIX, msg.bucket, msg.key);
-        let entry = serde_json::to_string(&msg.entry)?;
-        self.client.send_and_forget(resp_array!["SET", key, entry]);
-        self.client.send_and_forget(resp_array!["EXPIRE", key, format!("{}", &self.ttl)]);
-        Ok(())
+        let client = self.client.clone();
+        let msg = msg.clone();
+        let ttl = self.ttl.clone();
+
+        Box::pin(async move {
+            let client = client.lock().await;
+
+            let key = format!("{}:{}:{}", KEY_PREFIX, msg.bucket, msg.key);
+            let entry = serde_json::to_string(&msg.entry)?;
+            client.send_and_forget(resp_array!["SET", &key, entry]);
+            client.send_and_forget(resp_array!["EXPIRE", &key, format!("{}", &ttl)]);
+
+            Ok(())
+        })
     }
 }
 
@@ -58,10 +69,17 @@ impl Handler<GetCacheEntry> for RedisCache {
     type Result = ResponseFuture<Result<CacheEntry, CacheError>>;
 
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
+        let client = self.client.clone();
+        let msg = msg.clone();
+
         Box::pin(async move {
+            let client = client.lock().await;
+
             let key = format!("{}:{}:{}", KEY_PREFIX, msg.bucket, msg.key);
-            let entry_str = self.client.send::<String>(resp_array!["GET", key]).await?;
+            let entry_str = client.send::<String>(resp_array!["GET", key]).await
+                .map_err(|err| CacheError::FailedToGetKey { reason: format!("{}", err) })?;
             let entry = serde_json::from_str(&entry_str)?;
+
             Ok(entry)
         })
     }

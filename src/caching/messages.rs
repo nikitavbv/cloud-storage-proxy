@@ -4,11 +4,12 @@ use serde::{Serialize, Deserialize};
 use custom_error::custom_error;
 
 custom_error! {pub CacheError
-    FailedToCreateCacheClient {source: String} = "failed to create cache client: {}",
-    SerdeError {source: serde_json::Error} = "failed to serialize/deserialize entry: {source}"
+    FailedToCreateCacheClient {reason: String} = "failed to create cache client: {}",
+    SerdeError {source: serde_json::Error} = "failed to serialize/deserialize entry: {source}",
+    FailedToGetKey {reason: String} = "failed to get key: {reason}"
 }
 
-#[derive(Message)]
+#[derive(Message, Clone)]
 #[rtype(result = "Result<(), CacheError>")]
 pub struct PutCacheEntry {
     pub bucket: String,
@@ -16,7 +17,7 @@ pub struct PutCacheEntry {
     pub entry: CacheEntry
 }
 
-#[derive(Message)]
+#[derive(Message, Clone)]
 #[rtype(result = "Result<CacheEntry, CacheError>")]
 pub struct GetCacheEntry {
     pub bucket: String,
