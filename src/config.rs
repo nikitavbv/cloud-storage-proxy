@@ -32,11 +32,12 @@ pub struct BucketConfiguration {
     pub bucket: Option<String>,
     pub index: Option<String>,
     pub not_found: Option<String>,
-    pub caching: Option<Caching>,
+    pub cache_name: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Caching {
+    pub name: Option<String>,
     #[serde(rename="type")]
     pub caching_type: Option<String>,
     pub capacity: Option<usize>,
