@@ -22,7 +22,7 @@ impl From<LoadConfigError> for IOError {
 pub struct Config {
     pub service_account_key: Option<String>,
     pub service_account_key_file: Option<String>,
-    pub caching: Option<Caching>,
+    pub caching: HashMap<String, Caching>,
     pub buckets: HashMap<String, BucketConfiguration>,
 }
 
@@ -37,7 +37,6 @@ pub struct BucketConfiguration {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Caching {
-    pub name: Option<String>,
     #[serde(rename="type")]
     pub caching_type: Option<String>,
     pub capacity: Option<usize>,
