@@ -37,6 +37,7 @@ impl Caching {
     async fn make_cache(config: &config::Caching) -> Result<CacheInstance, CacheInstantiationError> {
         match &config.caching_type {
             Some(v) => match v {
+                "local" => Ok(LocalCache::new(&config.capacity.unwrap()).start())
                 cache_type => Err(CacheInstatiationError::NotImplemeted { cache_type: cache_type.clone() })
             },
             None => Err(CacheInstantiationError::MissingField { field_name: "caching_type".to_string() })
