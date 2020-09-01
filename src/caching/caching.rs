@@ -26,7 +26,7 @@ impl Caching {
                     continue;
                 }
             };
-            caches.insert(cache_config.0.clone(), cache)
+            caches.insert(cache_config.0.clone(), cache);
         }
 
         Caching {
