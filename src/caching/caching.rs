@@ -19,7 +19,7 @@ impl Caching {
         let mut caches = HashMap::new();
 
         for cache_config in config {
-            let cache = match make_cache(cache_config.1).await {
+            let cache = match Self::make_cache(cache_config.1).await {
                 Ok(v) => v,
                 Err(err) => {
                     error!("failed to make cache: {}", err);
