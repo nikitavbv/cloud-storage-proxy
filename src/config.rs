@@ -39,8 +39,14 @@ pub struct BucketConfiguration {
 pub struct Caching {
     #[serde(rename="type")]
     pub caching_type: Option<String>,
+    pub ttl: Option<u64>,
+
+    // local cache
     pub capacity: Option<usize>,
-    pub ttl: Option<u64>
+
+    // redis
+    pub host: Option<String>,
+    pub port: Option<u16>,
 }
 
 impl Caching {
