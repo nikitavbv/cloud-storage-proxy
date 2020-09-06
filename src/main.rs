@@ -13,7 +13,8 @@ use std::{sync::Arc, env::var, collections::HashMap};
 use gcs::GetObjectResult;
 use crate::caching::local::LocalCache;
 use crate::caching::messages::GetCacheEntry;
-use config::{Caching, BucketConfiguration};
+use crate::caching::caching::Caching;
+use config::BucketConfiguration;
 use tokio::sync::Mutex;
 use openssl::hash::Hasher;
 use chashmap::CHashMap;
@@ -26,24 +27,15 @@ mod gcs;
 mod caching;
 
 #[actix_rt::main]
-async fn main() {
+async fn main() -> std::io::Result<()> {
     env_logger::init();
 
-    let caching_addr = LocalCache::new(Some(100), None).start();
-
-    let test_message = GetCacheEntry {
-        bucket: "test".into(),
-        key: "key".into()
-    };
-
-    let result = caching_addr.send(test_message).await;
-
-    println!("result is: {}", result.is_ok());
-
-    /*let addr = ([0, 0, 0, 0], 8080).into();
-
     let config = Arc::new(load_config()?);
-    let client = Arc::new(Mutex::new(GoogleCloudStorageClient::new(&service_account_key(&config)).await?));
+    // let addr = ([0, 0, 0, 0], 8080).into();
+    let cache: Arc<Caching> = Arc::new(Caching::new(&config.caching).await);
+    
+    Ok(())
+    /*let client = Arc::new(Mutex::new(GoogleCloudStorageClient::new(&service_account_key(&config)).await?));
     let cache = Arc::new(CHashMap::new());
 
     let make_svc = make_service_fn(move |_| {
@@ -68,6 +60,7 @@ async fn main() {
         eprintln!("server error: {}", e);
     }*/
 }
+
 /*
 async fn proxy_service(
     req: Request<Body>,
