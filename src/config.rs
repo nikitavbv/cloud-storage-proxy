@@ -22,6 +22,8 @@ impl From<LoadConfigError> for IOError {
 pub struct Config {
     pub service_account_key: Option<String>,
     pub service_account_key_file: Option<String>,
+    pub bind_address: Option<String>,
+    pub port: Option<u16>,
     pub caching: HashMap<String, Caching>,
     pub buckets: HashMap<String, BucketConfiguration>,
 }
