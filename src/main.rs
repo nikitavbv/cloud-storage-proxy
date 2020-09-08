@@ -31,7 +31,7 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let config = Arc::new(load_config()?);
-    // let addr = ([0, 0, 0, 0], 8080).into();
+    let addr = (config.bind_address.unwrap_or("0.0.0.0".to_string()).split(".").collect(), config.port.unwrap_or(8080)).into();
     let cache: Arc<Caching> = Arc::new(Caching::new(&config.caching).await);
     
     Ok(())
