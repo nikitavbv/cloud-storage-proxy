@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{Read, ErrorKind};
 use std::io::Error as IOError;
 use toml::de::Error as TomlError;
-use std::collections::HashMap;
+use std::{net::IpAddr, collections::HashMap};
 
 custom_error! {pub LoadConfigError
     FailedToRead{source: IOError} = "failed to read config file: {source}",
@@ -76,6 +76,11 @@ impl Config {
 
     pub fn bucket_configuration_by_host(&self, host: &str) -> Option<&BucketConfiguration> {
         self.buckets.values().find(|v| v.host  == host)
+    }
+
+    pub fn ip_addr(&self) -> Option<IpAddr> {
+        let parts = &self.bind_address.unwrap_or("0.0.0.0".to_string()).split(".").filter_map(|v| v.parse().ok()).collect::<Vec<u8>>();
+        parts.try_into().map(|v| v.parse().ok())
     }
 }
 

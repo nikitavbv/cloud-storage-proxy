@@ -31,12 +31,15 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let config = Arc::new(load_config()?);
-    let addr = (config.bind_address.unwrap_or("0.0.0.0".to_string()).split(".").collect(), config.port.unwrap_or(8080)).into();
+    let addr: [u8; 4] = match config.bind_address.unwrap_or("0.0.0.0".to_string()).split(".").filter_map(|v| v.parse().ok()).collect::<Vec<u8>>().to_boxed_slice() {
+
+    };
+    let addr = (
+        addr, 
+        config.port.unwrap_or(8080)
+    ).into();
     let cache: Arc<Caching> = Arc::new(Caching::new(&config.caching).await);
-    
-    Ok(())
-    /*let client = Arc::new(Mutex::new(GoogleCloudStorageClient::new(&service_account_key(&config)).await?));
-    let cache = Arc::new(CHashMap::new());
+    let client = Arc::new(Mutex::new(GoogleCloudStorageClient::new(&service_account_key(&config)).await?));
 
     let make_svc = make_service_fn(move |_| {
         let config = config.clone();
@@ -58,15 +61,16 @@ async fn main() -> std::io::Result<()> {
 
     if let Err(e) = server.await {
         eprintln!("server error: {}", e);
-    }*/
+    }
+
+    Ok(())
 }
 
-/*
 async fn proxy_service(
     req: Request<Body>,
     config: &Config,
     gcs: Arc<Mutex<GoogleCloudStorageClient>>,
-    cache: Arc<CHashMap<String, Arc<Mutex<Box<dyn GCSObjectCache + Send>>>>>,
+    cache: Arc<Caching>,
 ) -> Result<Response<Body>, String> {
     /*if req.method() != Method::GET {
         return Ok(Response::new("wrong method".into()));
@@ -110,7 +114,7 @@ async fn proxy_service(
 
 
     //async move {
-    let cache = cache.get("bucket").unwrap();
+    //let cache = cache.get("bucket").unwrap();
     //let object = cache.lock_owned().await.get("some_key").await;
 
         /*let object = match object {
@@ -129,10 +133,11 @@ async fn proxy_service(
         // }
         //};
 
-        Err("oops".into())
+    Err("not implemented".into())
     //}.await
-}*/
+}
 
+/*
 async fn response_for_gcs_client_error(
     err: GCSClientError, 
     bucket: &BucketConfiguration, 
@@ -188,7 +193,7 @@ fn response_for_object(object: GetObjectResult) -> Response<Body> {
     }
 
     return res;
-}
+}*/
 
 fn service_account_key(config: &Config) -> String {
     match &config.service_account_key {
@@ -202,12 +207,3 @@ fn service_account_key(config: &Config) -> String {
 fn get_service_account_key_file_name() -> String {
     var("SERVICE_ACCOUNT_KEY_FILE").unwrap_or("service_account_key.json".into())
 }
-
-/*fn make_cache(caching: &Caching) -> Box<dyn GCSObjectCache + Send> {
-    let caching_type= &caching.caching_type.as_ref().unwrap()[..];
-
-    match caching_type {
-        "local" => Box::new(LocalCache::new(caching.capacity, caching.ttl)),
-        _ => Box::new(NoCaching::new()),
-    }
-}*/
