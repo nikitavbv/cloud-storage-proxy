@@ -4,6 +4,7 @@ use std::clone::Clone;
 use std::fs::File;
 use std::io::{Read, ErrorKind};
 use std::io::Error as IOError;
+use std::convert::TryInto;
 use toml::de::Error as TomlError;
 use std::{net::IpAddr, collections::HashMap};
 
@@ -79,8 +80,16 @@ impl Config {
     }
 
     pub fn ip_addr(&self) -> Option<IpAddr> {
-        let parts = &self.bind_address.unwrap_or("0.0.0.0".to_string()).split(".").filter_map(|v| v.parse().ok()).collect::<Vec<u8>>();
-        parts.try_into().map(|v| v.parse().ok())
+        let parts = &self.bind_address.clone()
+            .unwrap_or("0.0.0.0".to_string())
+            .split(".")
+            .filter_map(|v| v.parse().ok())
+            .collect::<Vec<u8>>();
+        let parts: Box<[u8; 4]> = match parts.clone().into_boxed_slice().try_into() {
+            Ok(v) => v,
+            Err(_) => return None
+        };
+        Some(IpAddr::from(*parts))
     }
 }
 

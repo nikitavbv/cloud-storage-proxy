@@ -18,7 +18,7 @@ use config::BucketConfiguration;
 use tokio::sync::Mutex;
 use openssl::hash::Hasher;
 use chashmap::CHashMap;
-use std::future::Future;
+use std::{net::SocketAddr, future::Future};
 use actix::System;
 use actix::prelude::*;
 
@@ -31,13 +31,8 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let config = Arc::new(load_config()?);
-    let addr: [u8; 4] = match config.bind_address.unwrap_or("0.0.0.0".to_string()).split(".").filter_map(|v| v.parse().ok()).collect::<Vec<u8>>().to_boxed_slice() {
-
-    };
-    let addr = (
-        addr, 
-        config.port.unwrap_or(8080)
-    ).into();
+    let addr = config.ip_addr().unwrap_or([0, 0, 0, 0].into());
+    let addr = SocketAddr::new(addr, config.port.unwrap_or(8080));
     let cache: Arc<Caching> = Arc::new(Caching::new(&config.caching).await);
     let client = Arc::new(Mutex::new(GoogleCloudStorageClient::new(&service_account_key(&config)).await?));
 
