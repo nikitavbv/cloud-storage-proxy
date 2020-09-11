@@ -67,7 +67,7 @@ async fn proxy_service(
     gcs: Arc<Mutex<GoogleCloudStorageClient>>,
     cache: Arc<Caching>,
 ) -> Result<Response<Body>, String> {
-    /*if req.method() != Method::GET {
+    if req.method() != Method::GET {
         return Ok(Response::new("wrong method".into()));
     }
 
@@ -91,48 +91,14 @@ async fn proxy_service(
         );
     }
 
-    let cache = match cache.get_mut(bucket_name) {
-        Some(v) => v,
-        None => {
-            let new_cache = make_cache(&match config.caching.clone() {
-                Some(v) => match bucket.caching.clone() {
-                    Some(v2) => v.override_with(&v2),
-                    None => v,
-                },
-                None => bucket.caching.clone()
-                    .expect("expected caching to be set for bucket, as no caching is set globally")
-            });
-            cache.insert(bucket_name.into(), new_cache);
-            cache.get_mut(bucket_name).unwrap()
-        }
-    };*/
+    let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
+        Ok(v) => v,
+        Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
+    };
 
-
-    //async move {
-    //let cache = cache.get("bucket").unwrap();
-    //let object = cache.lock_owned().await.get("some_key").await;
-
-        /*let object = match object {
-      Some(v) => {
-      v.clone()
-      },z
-      None => {*/
-
-        //let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
-        //    Ok(v) => v,
-        //    Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
-        //};
-
-        //obj_cache.put(&object_name, obj.clone()).await;
-        //obj
-        // }
-        //};
-
-    Err("not implemented".into())
-    //}.await
+    Ok(response_for_object(obj))
 }
 
-/*
 async fn response_for_gcs_client_error(
     err: GCSClientError, 
     bucket: &BucketConfiguration, 
@@ -188,7 +154,7 @@ fn response_for_object(object: GetObjectResult) -> Response<Body> {
     }
 
     return res;
-}*/
+}
 
 fn service_account_key(config: &Config) -> String {
     match &config.service_account_key {
