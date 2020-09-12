@@ -1,0 +1,11 @@
+service_account_key = "[gcp service account key]"
+
+[caching.local_cache]
+type = "local"
+capacity = 10
+ttl = 3600
+
+[buckets.example]
+host = "example.com"
+bucket = "example.com"
+cache_name = "local_cache"
