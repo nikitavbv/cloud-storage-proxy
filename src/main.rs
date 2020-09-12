@@ -91,6 +91,17 @@ async fn proxy_service(
         );
     }
 
+    if let Some(cache_name) = &bucket.cache_name {
+        let cache = cache.get_cache(&cache_name);
+        if let Some(cache) = cache {
+            debug!("using cache");
+        } else {
+            debug!("cache instance not found");
+        }
+    } else {
+        debug!("skipping caching");
+    }
+
     let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
         Ok(v) => v,
         Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)

@@ -48,8 +48,13 @@ impl Caching {
             None => Err(CacheInstantiationError::MissingField { field_name: "caching_type".to_string() })
         }
     }
+
+    pub fn get_cache(&self, name: &str) -> Option<CacheInstance> {
+        (&self.caches.get(name).map(|v| v.clone())).clone()
+    }
 }
 
+#[derive(Clone)]
 pub enum CacheInstance {
     LocalCache(Addr<LocalCache>),
     Redis(Addr<RedisCache>),
