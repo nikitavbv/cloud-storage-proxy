@@ -95,6 +95,21 @@ async fn proxy_service(
         let cache = cache.get_cache(&cache_name);
         if let Some(cache) = cache {
             debug!("using cache");
+
+            let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
+                Ok(v) => v,
+                Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
+            };
+
+            let put_cache_message = PutCacheEntry {
+                bucket: bucket_name.clone(),
+                key: object_name.clone(),
+                entry: CacheEntry::from_body(obj)
+            };
+
+            if let Err(err) = cache.send(put_cache_message).await {
+                error!("failed to save gcs response to cache: {}", err);
+            }
         } else {
             debug!("cache instance not found");
         }
