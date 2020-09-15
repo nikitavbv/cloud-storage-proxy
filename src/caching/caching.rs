@@ -59,3 +59,13 @@ pub enum CacheInstance {
     LocalCache(Addr<LocalCache>),
     Redis(Addr<RedisCache>),
 }
+
+impl CacheInstance {
+
+    pub fn send_put_message(&self, msg: PutCacheEntry) {
+        match &self {
+            LocalCache(addr) => addr.send(msg),
+            Redis(addr) => addr.send(msg)
+        }
+    }
+}
