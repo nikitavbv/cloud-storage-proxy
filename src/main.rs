@@ -12,7 +12,7 @@ use std::fs;
 use std::{sync::Arc, env::var, collections::HashMap};
 use gcs::GetObjectResult;
 use crate::caching::local::LocalCache;
-use crate::caching::messages::GetCacheEntry;
+use crate::caching::messages::{GetCacheEntry, PutCacheEntry, CacheEntry};
 use crate::caching::caching::Caching;
 use config::BucketConfiguration;
 use tokio::sync::Mutex;
@@ -102,12 +102,12 @@ async fn proxy_service(
             };
 
             let put_cache_message = PutCacheEntry {
-                bucket: bucket_name.clone(),
-                key: object_name.clone(),
-                entry: CacheEntry::from_body(obj)
+                bucket: bucket_name.to_string(),
+                key: object_name.to_string(),
+                entry: CacheEntry::from_body(obj.body)
             };
 
-            if let Err(err) = cache.send(put_cache_message).await {
+            if let Err(err) = cache.send_put_message(put_cache_message).await {
                 error!("failed to save gcs response to cache: {}", err);
             }
         } else {
