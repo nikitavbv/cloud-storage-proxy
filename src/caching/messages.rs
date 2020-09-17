@@ -6,7 +6,8 @@ use custom_error::custom_error;
 custom_error! {pub CacheError
     FailedToCreateCacheClient {reason: String} = "failed to create cache client: {}",
     SerdeError {source: serde_json::Error} = "failed to serialize/deserialize entry: {source}",
-    FailedToGetKey {reason: String} = "failed to get key: {reason}"
+    FailedToGetKey {reason: String} = "failed to get key: {reason}",
+    FailedToSendMessage {source: actix::MailboxError} = "failed to send message: {source}"
 }
 
 #[derive(Message, Clone)]
