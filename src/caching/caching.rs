@@ -2,7 +2,7 @@ use custom_error::custom_error;
 use std::collections::HashMap;
 use crate::caching::local::LocalCache;
 use crate::caching::redis::RedisCache;
-use crate::caching::messages::{CacheError, PutCacheEntry};
+use crate::caching::messages::{CacheError, PutCacheEntry, GetCacheEntry, CacheEntry};
 use crate::config;
 use actix::{Actor, Addr};
 
@@ -63,6 +63,13 @@ pub enum CacheInstance {
 impl CacheInstance {
 
     pub async fn send_put_message(&self, msg: PutCacheEntry) -> Result<(), CacheError> {
+        match &self {
+            Self::LocalCache(addr) => addr.send(msg).await?,
+            Self::Redis(addr) => addr.send(msg).await?
+        }
+    }
+
+    pub async fn send_get_message(&self, msg: GetCacheEntry) -> Result<CacheEntry, CacheError> {
         match &self {
             Self::LocalCache(addr) => addr.send(msg).await?,
             Self::Redis(addr) => addr.send(msg).await?
