@@ -96,20 +96,37 @@ async fn proxy_service(
         if let Some(cache) = cache {
             debug!("using cache");
 
-            let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
-                Ok(v) => v,
-                Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
-            };
-
-            let put_cache_message = PutCacheEntry {
+            let get_from_cache_message = GetCacheEntry {
                 bucket: bucket_name.to_string(),
-                key: object_name.to_string(),
-                entry: CacheEntry::from_body(obj.body)
+                key: object_name.to_string()
             };
 
-            if let Err(err) = cache.send_put_message(put_cache_message).await {
-                error!("failed to save gcs response to cache: {}", err);
-            }
+            let res = match cache.send_get_message(get_from_cache_message).await {
+                Ok(v) => v,
+                Err(err) => {
+                    warn!("failed to get object from cache: {}", err);
+
+                    let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
+                        Ok(v) => v,
+                        Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
+                    };
+
+                    let entry = CacheEntry::from_body(obj.body);
+
+                    let put_cache_message = PutCacheEntry {
+                        bucket: bucket_name.to_string(),
+                        key: object_name.to_string(),
+                        entry: entry.clone(),
+                    };
+
+                    if let Err(err) = cache.send_put_message(put_cache_message).await {
+                        error!("failed to save gcs response to cache: {}", err);
+                    }
+
+                    entry
+                }
+            };
+
         } else {
             debug!("cache instance not found");
         }
