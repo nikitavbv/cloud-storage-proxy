@@ -91,7 +91,7 @@ async fn proxy_service(
         );
     }
 
-    if let Some(cache_name) = &bucket.cache_name {
+    let res: GetObjectResult = if let Some(cache_name) = &bucket.cache_name {
         let cache = cache.get_cache(&cache_name);
         if let Some(cache) = cache {
             debug!("using cache");
@@ -106,10 +106,10 @@ async fn proxy_service(
                 Err(err) => {
                     warn!("failed to get object from cache: {}", err);
 
-                    let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
-                        Ok(v) => v,
+                    match gcs.lock().await.get_object(bucket_name, &object_name).await {
+                        Ok(v) => Ok(v),
                         Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
-                    };
+                    }
 
                     let entry = CacheEntry::from_body(obj.body);
 
@@ -127,19 +127,25 @@ async fn proxy_service(
                 }
             };
 
+            res
         } else {
             debug!("cache instance not found");
+
+            match gcs.lock().await.get_object(bucket_name, &object_name).await {
+                Ok(v) => v,
+                Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
+            }
         }
     } else {
         debug!("skipping caching");
-    }
 
-    let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
-        Ok(v) => v,
-        Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
+        match gcs.lock().await.get_object(bucket_name, &object_name).await {
+            Ok(v) => v,
+            Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
+        }
     };
 
-    Ok(response_for_object(obj))
+    Ok(response_for_object(res))
 }
 
 async fn response_for_gcs_client_error(
