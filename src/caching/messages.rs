@@ -2,6 +2,8 @@ use std::io;
 use actix_derive::{Message, MessageResponse};
 use serde::{Serialize, Deserialize};
 use custom_error::custom_error;
+use crate::gcs::GetObjectResult;
+use std::collections::HashMap;
 
 custom_error! {pub CacheError
     FailedToCreateCacheClient {reason: String} = "failed to create cache client: {}",
@@ -41,6 +43,13 @@ impl CacheEntry {
     pub fn from_body(body: Vec<u8>) -> Self {
         CacheEntry {
             body
+        }
+    }
+
+    pub fn to_get_object_result(self) -> GetObjectResult {
+        GetObjectResult {
+            body: self.body,
+            headers: HashMap::new()
         }
     }
 }

@@ -106,10 +106,10 @@ async fn proxy_service(
                 Err(err) => {
                     warn!("failed to get object from cache: {}", err);
 
-                    match gcs.lock().await.get_object(bucket_name, &object_name).await {
-                        Ok(v) => Ok(v),
+                    let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
+                        Ok(v) => v,
                         Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
-                    }
+                    };
 
                     let entry = CacheEntry::from_body(obj.body);
 
@@ -127,7 +127,7 @@ async fn proxy_service(
                 }
             };
 
-            res
+            res.to_get_object_result()
         } else {
             debug!("cache instance not found");
 
