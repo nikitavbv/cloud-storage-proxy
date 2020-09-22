@@ -29,27 +29,30 @@ pub struct GetCacheEntry {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CacheEntry {
-    body: Vec<u8>
+    body: Vec<u8>,
+    headers: HashMap<string, string>
 }
 
 impl CacheEntry {
 
     pub fn new() -> Self {
         CacheEntry {
-            body: Vec::new()
+            body: Vec::new(),
+            headers: HashMap::new(),
         }
     }
 
-    pub fn from_body(body: Vec<u8>) -> Self {
+    pub fn from_body_and_headers(body: Vec<u8>, headers: HashMap<string, string>) -> Self {
         CacheEntry {
-            body
+            body,
+            headers,
         }
     }
 
     pub fn to_get_object_result(self) -> GetObjectResult {
         GetObjectResult {
             body: self.body,
-            headers: HashMap::new()
+            headers: self.headers,
         }
     }
 }
