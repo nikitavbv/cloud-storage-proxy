@@ -30,7 +30,7 @@ pub struct GetCacheEntry {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CacheEntry {
     body: Vec<u8>,
-    headers: HashMap<string, string>
+    headers: HashMap<String, String>
 }
 
 impl CacheEntry {
