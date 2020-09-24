@@ -42,7 +42,7 @@ impl CacheEntry {
         }
     }
 
-    pub fn from_body_and_headers(body: Vec<u8>, headers: HashMap<string, string>) -> Self {
+    pub fn from_body_and_headers(body: Vec<u8>, headers: HashMap<String, String>) -> Self {
         CacheEntry {
             body,
             headers,

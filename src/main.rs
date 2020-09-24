@@ -111,7 +111,7 @@ async fn proxy_service(
                         Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
                     };
 
-                    let entry = CacheEntry::from_body(obj.body);
+                    let entry = CacheEntry::from_body_and_headers(obj.body, obj.headers);
 
                     let put_cache_message = PutCacheEntry {
                         bucket: bucket_name.to_string(),
