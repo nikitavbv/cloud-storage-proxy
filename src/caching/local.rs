@@ -31,10 +31,6 @@ impl LocalCache {
 
 impl Actor for LocalCache {
     type Context = Context<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        println!("local cache actor is alive");
-    }
 }
 
 impl Handler<PutCacheEntry> for LocalCache {
