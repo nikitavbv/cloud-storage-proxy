@@ -4,23 +4,17 @@ extern crate custom_error;
 extern crate ttl_cache;
 
 use hyper::service::{make_service_fn, service_fn};
-use std::convert::Infallible;
 use hyper::{Request, Body, Response, Server, Method, Error, StatusCode, header::{HeaderValue, HeaderName}};
 use crate::config::{load_config, Config};
 use crate::gcs::{GoogleCloudStorageClient, GCSClientError};
 use std::fs;
-use std::{sync::Arc, env::var, collections::HashMap};
+use std::{sync::Arc, env::var};
 use gcs::GetObjectResult;
-use crate::caching::local::LocalCache;
 use crate::caching::messages::{GetCacheEntry, PutCacheEntry, CacheEntry};
 use crate::caching::caching::Caching;
 use config::BucketConfiguration;
 use tokio::sync::Mutex;
-use openssl::hash::Hasher;
-use chashmap::CHashMap;
-use std::{net::SocketAddr, future::Future};
-use actix::System;
-use actix::prelude::*;
+use std::net::SocketAddr;
 
 mod config;
 mod gcs;
