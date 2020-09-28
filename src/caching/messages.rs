@@ -1,5 +1,4 @@
-use std::io;
-use actix_derive::{Message, MessageResponse};
+use actix_derive::Message;
 use serde::{Serialize, Deserialize};
 use custom_error::custom_error;
 use crate::gcs::GetObjectResult;
