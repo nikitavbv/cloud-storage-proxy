@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use actix::{Context, Handler, Actor, ResponseFuture};
 use crate::caching::messages::{CacheEntry, GetCacheEntry, PutCacheEntry, CacheError};
 use redis_async::resp_array;

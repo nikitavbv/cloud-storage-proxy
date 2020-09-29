@@ -46,7 +46,9 @@ impl Handler<GetCacheEntry> for LocalCache {
 
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
         Box::pin(async move {
-            Ok(CacheEntry::new())
+            self.cache.get(&msg.key).map(|v| v.clone()).ok_or(CacheError::FailedToGetKey {
+                reason: "Key not present".to_string()
+            })
         })
     }
 }
