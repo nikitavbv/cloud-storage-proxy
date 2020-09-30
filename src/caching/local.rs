@@ -45,8 +45,11 @@ impl Handler<GetCacheEntry> for LocalCache {
     type Result = ResponseFuture<Result<CacheEntry, CacheError>>;
 
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
+        let key = msg.key.clone();
+        let cache = self.cache.clone();
+
         Box::pin(async move {
-            self.cache.get(&msg.key).map(|v| v.clone()).ok_or(CacheError::FailedToGetKey {
+            cache.get(&key).map(|v| v.clone()).ok_or(CacheError::FailedToGetKey {
                 reason: "Key not present".to_string()
             })
         })
