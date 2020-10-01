@@ -82,6 +82,6 @@ impl GoogleCloudStorageClient {
             .await?;
 
 
-        Ok(GetObjectResult::new(res).await?);
+        Ok(GetObjectResult::new(res).await?)
     }
 }
