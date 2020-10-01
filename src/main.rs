@@ -77,7 +77,7 @@ async fn proxy_service(
     }
 
     // TODO: handle dirs
-    if object_name.is_empty() && object_name.ends_with("/") {
+    if object_name.is_empty() || object_name.ends_with("/") {
         object_name = format!(
             "{}{}",
             object_name,
@@ -133,7 +133,8 @@ async fn proxy_service(
     } else {
         debug!("skipping caching");
 
-        match gcs.lock().await.get_object(bucket_name, &object_name).await {
+        let res = gcs.lock().await.get_object(bucket_name, &object_name).await;
+        match res {
             Ok(v) => v,
             Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
         }
@@ -158,7 +159,7 @@ async fn response_for_gcs_client_error(
         let not_found_object_name = bucket.not_found.as_ref()
             .unwrap_or(&"404.html".to_string())
             .clone();
-        
+
         return match gcs.lock().await.get_object(bucket_name, &not_found_object_name).await {
             Ok(v) => response_for_object(v),
             Err(_) => match Response::builder()
