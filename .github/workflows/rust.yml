@@ -44,4 +44,4 @@ jobs:
           registry: docker.io
           username: nikitavbv
           password: ${{ secrets.docker_hub_token }}
-          tags: "latest,0.1.3"
+          tags: "latest,0.2.0"
