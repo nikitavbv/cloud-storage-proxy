@@ -34,13 +34,6 @@ pub struct CacheEntry {
 
 impl CacheEntry {
 
-    pub fn new() -> Self {
-        CacheEntry {
-            body: Vec::new(),
-            headers: HashMap::new(),
-        }
-    }
-
     pub fn from_body_and_headers(body: Vec<u8>, headers: HashMap<String, String>) -> Self {
         CacheEntry {
             body,

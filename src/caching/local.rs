@@ -15,13 +15,6 @@ impl LocalCache {
             ttl: Duration::from_secs(ttl.unwrap_or(3600))
         }
     }
-
-    async fn get_key(&mut self, msg: GetCacheEntry) -> Option<CacheEntry> {
-        match self.cache.get(&msg.key) {
-            Some(v) => Some(v.clone()),
-            None => None
-        }
-    }
 }
 
 impl Actor for LocalCache {

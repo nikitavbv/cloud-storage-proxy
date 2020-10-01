@@ -52,27 +52,6 @@ pub struct Caching {
     pub port: Option<u16>,
 }
 
-impl Caching {
-    pub fn override_with(&self, other: &Caching) -> Caching {
-        let mut this_clone = self.clone();
-        let other = other.clone();
-
-        if other.caching_type.is_some() {
-            this_clone.caching_type = other.caching_type;
-        }
-
-        if other.capacity.is_some() {
-            this_clone.capacity = other.capacity;
-        }
-
-        if other.ttl.is_some() {
-            this_clone.ttl = other.ttl;
-        }
-
-        this_clone
-    }
-}
-
 impl Config {
 
     pub fn bucket_configuration_by_host(&self, host: &str) -> Option<&BucketConfiguration> {

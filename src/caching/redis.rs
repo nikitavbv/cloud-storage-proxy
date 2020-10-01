@@ -30,8 +30,7 @@ impl RedisCache {
 impl Actor for RedisCache {
     type Context = Context<Self>;
 
-    fn started(&mut self, ctx: &mut Self::Context) {
-        println!("local cache actor is alive");
+    fn started(&mut self, _ctx: &mut Self::Context) {
     }
 }
 
