@@ -15,6 +15,7 @@ use crate::caching::caching::Caching;
 use config::BucketConfiguration;
 use tokio::sync::Mutex;
 use std::net::SocketAddr;
+use std::collections::HashMap;
 
 mod config;
 mod gcs;
@@ -27,7 +28,7 @@ async fn main() -> std::io::Result<()> {
     let config = Arc::new(load_config()?);
     let addr = config.ip_addr().unwrap_or([0, 0, 0, 0].into());
     let addr = SocketAddr::new(addr, config.port.unwrap_or(8080));
-    let cache: Arc<Caching> = Arc::new(Caching::new(&config.caching).await);
+    let cache: Arc<Caching> = Arc::new(Caching::new(config.caching.as_ref().unwrap_or(&HashMap::new())).await);
     let client = Arc::new(Mutex::new(GoogleCloudStorageClient::new(&service_account_key(&config)).await?));
 
     let make_svc = make_service_fn(move |_| {

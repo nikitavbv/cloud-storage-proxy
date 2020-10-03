@@ -25,8 +25,8 @@ pub struct Config {
     pub service_account_key_file: Option<String>,
     pub bind_address: Option<String>,
     pub port: Option<u16>,
-    pub caching: HashMap<String, Caching>,
-    pub buckets: HashMap<String, BucketConfiguration>,
+    pub caching: Option<HashMap<String, Caching>>,
+    pub buckets: Option<HashMap<String, BucketConfiguration>>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -55,7 +55,12 @@ pub struct Caching {
 impl Config {
 
     pub fn bucket_configuration_by_host(&self, host: &str) -> Option<&BucketConfiguration> {
-        self.buckets.values().find(|v| v.host  == host)
+        let buckets = match &self.buckets {
+            Some(v) => v,
+            None => return None
+        };
+
+        buckets.values().find(|v| v.host  == host)
     }
 
     pub fn ip_addr(&self) -> Option<IpAddr> {
