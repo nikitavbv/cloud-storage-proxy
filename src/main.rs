@@ -86,7 +86,7 @@ async fn proxy_service(
         );
     }
 
-    let res: GetObjectResult = if let Some(cache_name) = &bucket.cache_name {
+    return Ok(if let Some(cache_name) = &bucket.cache_name {
         let cache = cache.get_cache(&cache_name);
         if let Some(cache) = cache {
             debug!("using cache");
@@ -122,26 +122,22 @@ async fn proxy_service(
                 }
             };
 
-            res.to_get_object_result()
+            response_for_object(res.to_get_object_result())
         } else {
             debug!("cache instance not found");
-
-            match gcs.lock().await.get_object(bucket_name, &object_name).await {
-                Ok(v) => v,
-                Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
-            }
+            get_object_mapped_to_response(gcs.clone(), &bucket, bucket_name, &object_name).await
         }
     } else {
         debug!("skipping caching");
+        get_object_mapped_to_response(gcs.clone(), &bucket, bucket_name, &object_name).await
+    })
+}
 
-        let res = gcs.lock().await.get_object(bucket_name, &object_name).await;
-        match res {
-            Ok(v) => v,
-            Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
-        }
-    };
-
-    Ok(response_for_object(res))
+async fn get_object_mapped_to_response(gcs: Arc<Mutex<GoogleCloudStorageClient>>, bucket: &BucketConfiguration, bucket_name: &str, object_name: &str) -> Response<Body> {
+    match gcs.lock().await.get_object(bucket_name, &object_name).await {
+        Ok(v) => response_for_object(v),
+        Err(err) => response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await
+    }
 }
 
 async fn response_for_gcs_client_error(
