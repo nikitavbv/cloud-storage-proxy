@@ -36,6 +36,7 @@ pub struct BucketConfiguration {
     pub index: Option<String>,
     pub not_found: Option<String>,
     pub cache_name: Option<String>,
+    pub headers: Option<HashMap<String, String>>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
