@@ -122,7 +122,7 @@ async fn proxy_service(
                 }
             };
 
-            response_for_object(res.to_get_object_result())
+            response_for_object(&bucket, res.to_get_object_result())
         } else {
             debug!("cache instance not found");
             get_object_mapped_to_response(gcs.clone(), &bucket, bucket_name, &object_name).await
@@ -135,7 +135,7 @@ async fn proxy_service(
 
 async fn get_object_mapped_to_response(gcs: Arc<Mutex<GoogleCloudStorageClient>>, bucket: &BucketConfiguration, bucket_name: &str, object_name: &str) -> Response<Body> {
     match gcs.lock().await.get_object(bucket_name, &object_name).await {
-        Ok(v) => response_for_object(v),
+        Ok(v) => response_for_object(&bucket, v),
         Err(err) => response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await
     }
 }
@@ -158,7 +158,7 @@ async fn response_for_gcs_client_error(
             .clone();
 
         return match gcs.lock().await.get_object(bucket_name, &not_found_object_name).await {
-            Ok(v) => response_for_object(v),
+            Ok(v) => response_for_object(&bucket,v),
             Err(_) => match Response::builder()
                     .status(StatusCode::from_u16(404).unwrap())
                     .body("not found.".into()) {
@@ -184,14 +184,21 @@ async fn response_for_gcs_client_error(
     }
 }
 
-fn response_for_object(object: GetObjectResult) -> Response<Body> {
+fn response_for_object(config: &BucketConfiguration, object: GetObjectResult) -> Response<Body> {
     let mut res = Response::builder()
         .status(StatusCode::from_u16(200).unwrap())
         .body(object.body.into()).unwrap();
 
     let headers = res.headers_mut();
+
     for (k, v) in object.headers {
         headers.insert(HeaderName::from_lowercase(k.as_bytes()).unwrap(), HeaderValue::from_str(&v).unwrap());
+    }
+
+    if let Some(headers_to_append) = &config.headers {
+        for (k, v) in headers_to_append {
+            headers.insert(HeaderName::from_lowercase(k.as_bytes()).unwrap(), HeaderValue::from_str(&v).unwrap());
+        }
     }
 
     return res;
