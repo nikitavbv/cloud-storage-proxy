@@ -25,6 +25,7 @@ pub struct Config {
     pub service_account_key_file: Option<String>,
     pub bind_address: Option<String>,
     pub port: Option<u16>,
+    pub metrics: Option<bool>,
     pub caching: Option<HashMap<String, Caching>>,
     pub buckets: Option<HashMap<String, BucketConfiguration>>,
 }
