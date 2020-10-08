@@ -26,6 +26,7 @@ pub struct Config {
     pub bind_address: Option<String>,
     pub port: Option<u16>,
     pub metrics: Option<bool>,
+    pub metrics_endpoint: Option<String>,
     pub caching: Option<HashMap<String, Caching>>,
     pub buckets: Option<HashMap<String, BucketConfiguration>>,
 }
