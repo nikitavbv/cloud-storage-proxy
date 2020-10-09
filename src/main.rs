@@ -66,6 +66,10 @@ async fn proxy_service(
         return Ok(Response::new("wrong method".into()));
     }
 
+    if config.metrics.unwrap_or(false) || req.uri().path() == config.metrics_endpoint.unwrap_or("/metrics") {
+        return Ok(Response::new("metrics endpoint".into()));
+    }
+
     let host = req.headers().get("Host").unwrap().to_str().unwrap();
     let bucket = config.bucket_configuration_by_host(&host).unwrap();
     let bucket_name = bucket.bucket.as_ref().unwrap().as_str();
