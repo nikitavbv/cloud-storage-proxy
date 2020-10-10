@@ -66,7 +66,7 @@ async fn proxy_service(
         return Ok(Response::new("wrong method".into()));
     }
 
-    if config.metrics.unwrap_or(false) || req.uri().path() == config.metrics_endpoint.unwrap_or("/metrics") {
+    if config.metrics.unwrap_or(false) || req.uri().path() == config.metrics_endpoint.as_ref().unwrap_or(&"/metrics".to_string()) {
         return Ok(Response::new("metrics endpoint".into()));
     }
 
