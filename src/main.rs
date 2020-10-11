@@ -16,6 +16,7 @@ use config::BucketConfiguration;
 use tokio::sync::Mutex;
 use std::net::SocketAddr;
 use std::collections::HashMap;
+use prometheus::{TextEncoder, Encoder};
 
 mod config;
 mod gcs;
@@ -67,7 +68,7 @@ async fn proxy_service(
     }
 
     if config.metrics.unwrap_or(false) || req.uri().path() == config.metrics_endpoint.as_ref().unwrap_or(&"/metrics".to_string()) {
-        return Ok(Response::new("metrics endpoint".into()));
+        return Ok(response_for_metrics_endpoint());
     }
 
     let host = req.headers().get("Host").unwrap().to_str().unwrap();
@@ -206,6 +207,27 @@ fn response_for_object(config: &BucketConfiguration, object: GetObjectResult) ->
     }
 
     return res;
+}
+
+fn response_for_metrics_endpoint() -> Response<Body> {
+    let mut buffer = vec![];
+    let encoder = TextEncoder::new();
+    let metric_families = prometheus::gather();
+
+    if let Err(err) = encoder.encode(&metric_families, &mut buffer) {
+        error!("failed to write metrics: {}", err);
+        return Response::new("failed to write metrics".into());
+    }
+
+    let encoded = match String::from_utf8(buffer) {
+        Ok(v) => v,
+        Err(err) => {
+            error!("failed to encode metrics: {}", err);
+            return Response::new("failed to encode metrics".into());
+        }
+    };
+
+    Response::builder().status(StatusCode::from_u16(200).unwrap()).body(encoded.into()).unwrap()
 }
 
 fn service_account_key(config: &Config) -> String {
