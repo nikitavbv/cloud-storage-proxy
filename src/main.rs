@@ -1,4 +1,5 @@
 #[macro_use] extern crate serde_derive;
+#[macro_use] extern crate lazy_static;
 extern crate custom_error;
 #[macro_use] extern crate log;
 extern crate ttl_cache;
@@ -16,11 +17,18 @@ use config::BucketConfiguration;
 use tokio::sync::Mutex;
 use std::net::SocketAddr;
 use std::collections::HashMap;
-use prometheus::{TextEncoder, Encoder};
+use prometheus::{TextEncoder, Encoder, Counter, register_counter};
 
 mod config;
 mod gcs;
 mod caching;
+
+lazy_static! {
+    static ref REQUEST_OK_COUNTER: Counter = register_counter!(
+        "request_ok",
+        "requests successfully processed"
+    ).unwrap();
+}
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
@@ -127,6 +135,7 @@ async fn proxy_service(
                 }
             };
 
+            REQUEST_OK_COUNTER.inc();
             response_for_object(&bucket, res.to_get_object_result())
         } else {
             debug!("cache instance not found");
@@ -140,7 +149,10 @@ async fn proxy_service(
 
 async fn get_object_mapped_to_response(gcs: Arc<Mutex<GoogleCloudStorageClient>>, bucket: &BucketConfiguration, bucket_name: &str, object_name: &str) -> Response<Body> {
     match gcs.lock().await.get_object(bucket_name, &object_name).await {
-        Ok(v) => response_for_object(&bucket, v),
+        Ok(v) => {
+            REQUEST_OK_COUNTER.inc();
+            response_for_object(&bucket, v)
+        },
         Err(err) => response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await
     }
 }

@@ -337,6 +337,7 @@ dependencies = [
  "dns-lookup",
  "env_logger",
  "hyper",
+ "lazy_static",
  "log",
  "openssl",
  "prometheus",
