@@ -28,6 +28,10 @@ lazy_static! {
         "request_ok",
         "requests successfully processed"
     ).unwrap();
+    static ref CACHE_HITS_COUNTER: Counter = register_counter!(
+        "cache_hits",
+        "objects found in cache"
+    ).unwrap();
 }
 
 #[actix_rt::main]
@@ -110,7 +114,10 @@ async fn proxy_service(
             };
 
             let res = match cache.send_get_message(get_from_cache_message).await {
-                Ok(v) => v,
+                Ok(v) => {
+                    CACHE_HITS_COUNTER.inc();
+                    v
+                },
                 Err(err) => {
                     warn!("failed to get object from cache: {}", err);
 
