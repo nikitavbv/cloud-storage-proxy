@@ -32,6 +32,10 @@ lazy_static! {
         "cache_hits",
         "objects found in cache"
     ).unwrap();
+    static ref CACHE_MISS_COUNTER: Counter = register_counter!(
+        "cache_misses",
+        "objects not found in cache"
+    ).unwrap();
 }
 
 #[actix_rt::main]
@@ -119,6 +123,7 @@ async fn proxy_service(
                     v
                 },
                 Err(err) => {
+                    CACHE_MISS_COUNTER.inc();
                     warn!("failed to get object from cache: {}", err);
 
                     let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
