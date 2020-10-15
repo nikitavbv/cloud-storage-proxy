@@ -36,6 +36,10 @@ lazy_static! {
         "cache_misses",
         "objects not found in cache"
     ).unwrap();
+    static ref CLOUD_STORAGE_ERRORS_COUNTER: Counter = register_counter!(
+        "cloud_storage_errors",
+        "cloud storage errprs"
+    ).unwrap();
 }
 
 #[actix_rt::main]
