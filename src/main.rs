@@ -132,7 +132,10 @@ async fn proxy_service(
 
                     let obj = match gcs.lock().await.get_object(bucket_name, &object_name).await {
                         Ok(v) => v,
-                        Err(err) => return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
+                        Err(err) => {
+                            CLOUD_STORAGE_ERRORS_COUNTER.inc();
+                            return Ok(response_for_gcs_client_error(err, &bucket, &bucket_name, &object_name, gcs.clone()).await)
+                        }
                     };
 
                     let entry = CacheEntry::from_body_and_headers(obj.body, obj.headers);
