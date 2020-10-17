@@ -38,7 +38,11 @@ lazy_static! {
     ).unwrap();
     static ref CLOUD_STORAGE_ERRORS_COUNTER: Counter = register_counter!(
         "cloud_storage_errors",
-        "cloud storage errprs"
+        "cloud storage errors"
+    ).unwrap();
+    static ref CACHE_PUT_ERRORS_COUNTER: Counter = register_counter!(
+        "cache_put_errors",
+        "errors when putting objects to cache"
     ).unwrap();
 }
 
@@ -147,6 +151,7 @@ async fn proxy_service(
                     };
 
                     if let Err(err) = cache.send_put_message(put_cache_message).await {
+                        CACHE_PUT_ERRORS_COUNTER.inc();
                         error!("failed to save gcs response to cache: {}", err);
                     }
 
