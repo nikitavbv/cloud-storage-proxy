@@ -1,7 +1,17 @@
 use actix::{Context, Handler, Actor, ResponseFuture};
 use ttl_cache::TtlCache;
 use std::time::Duration;
+
+use prometheus::{Gauge, register_gauge};
+
 use crate::caching::messages::{CacheEntry, GetCacheEntry, PutCacheEntry, CacheError};
+
+lazy_static! {
+    static ref LOCAL_CACHE_SIZE: Gauge = register_gauge!(
+        "local_cache_size",
+        "local cache size"
+    ).unwrap();
+}
 
 pub struct LocalCache {
     cache: TtlCache<String, CacheEntry>,
