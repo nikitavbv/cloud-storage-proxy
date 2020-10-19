@@ -35,6 +35,8 @@ impl Handler<PutCacheEntry> for LocalCache {
     type Result = Result<(), CacheError>;
 
     fn handle(&mut self, msg: PutCacheEntry, _: &mut Context<Self>) -> Self::Result {
+        LOCAL_CACHE_SIZE.set(self.cache.iter().count() as f64);
+
         self.cache.insert(
             msg.key.into(),
             msg.entry,
