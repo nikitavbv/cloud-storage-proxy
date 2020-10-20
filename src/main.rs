@@ -28,6 +28,10 @@ lazy_static! {
         "request_ok",
         "requests successfully processed"
     ).unwrap();
+    static ref NOT_FOUND_ERRORS_COUNTER: Counter = register_counter!(
+        "not_found_errors_counter",
+        "total not found objects"
+    ).unwrap();
     static ref CACHE_HITS_COUNTER: Counter = register_counter!(
         "cache_hits",
         "objects found in cache"
@@ -194,6 +198,8 @@ async fn response_for_gcs_client_error(
     };
 
     if is_not_found {
+        NOT_FOUND_ERRORS_COUNTER.inc();
+
         let not_found_object_name = bucket.not_found.as_ref()
             .unwrap_or(&"404.html".to_string())
             .clone();
