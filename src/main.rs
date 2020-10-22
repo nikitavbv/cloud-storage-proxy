@@ -99,7 +99,11 @@ async fn proxy_service(
         return Ok(response_for_metrics_endpoint());
     }
 
-    let host = req.headers().get("Host").unwrap().to_str().unwrap();
+    let host = match req.headers().get("Host") {
+        Some(v) => v.to_str().unwrap(),
+        None => return Ok(Response::new("host header not set".into()))
+    };
+    
     let bucket = match config.bucket_configuration_by_host(&host) {
         Some(v) => v,
         None => return Ok(Response::new("unknown host".into()))
