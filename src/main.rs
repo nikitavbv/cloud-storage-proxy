@@ -100,10 +100,16 @@ async fn proxy_service(
     }
 
     let host = match req.headers().get("Host") {
-        Some(v) => v.to_str().unwrap(),
+        Some(v) => match v.to_str() {
+            Ok(v) => v,
+            Err(err) => {
+                error!("failed to read host header: {}", err);
+                return Ok(Response::new("failed to read host header".into()))
+            }
+        }
         None => return Ok(Response::new("host header not set".into()))
     };
-    
+
     let bucket = match config.bucket_configuration_by_host(&host) {
         Some(v) => v,
         None => return Ok(Response::new("unknown host".into()))
