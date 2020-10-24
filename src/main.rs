@@ -114,7 +114,10 @@ async fn proxy_service(
         Some(v) => v,
         None => return Ok(Response::new("unknown host".into()))
     };
-    let bucket_name = bucket.bucket.as_ref().unwrap().as_str();
+    let bucket_name = match bucket.bucket.as_ref() {
+        Some(v) => v.as_str(),
+        None => return Ok(Response::new("no origin configured".into()))
+    };
     let mut object_name = req.uri().path().to_string();
 
     trace!("GET {} {}", bucket_name, object_name);
