@@ -48,7 +48,10 @@ lazy_static! {
         "cache_put_errors",
         "errors when putting objects to cache"
     ).unwrap();
-}
+    static ref WRONG_METHOD_REQUESTS_COUNTER: Counter = register_counter!(
+        "wrong_method_requests_counter",
+        "Non-get requests"
+    ).unwrap();}
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
