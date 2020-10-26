@@ -51,7 +51,8 @@ lazy_static! {
     static ref WRONG_METHOD_REQUESTS_COUNTER: Counter = register_counter!(
         "wrong_method_requests_counter",
         "Non-get requests"
-    ).unwrap();}
+    ).unwrap();
+}
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
@@ -95,6 +96,7 @@ async fn proxy_service(
     cache: Arc<Caching>,
 ) -> Result<Response<Body>, String> {
     if req.method() != Method::GET {
+        WRONG_METHOD_REQUESTS_COUNTER.inc();
         return Ok(Response::new("wrong method".into()));
     }
 
