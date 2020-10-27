@@ -52,6 +52,10 @@ lazy_static! {
         "wrong_method_requests_counter",
         "Non-get requests"
     ).unwrap();
+    static ref INTERNAL_SERVER_ERRORS_COUNTER: Counter = register_counter!(
+        "internal_server_errors_counter",
+        "internal server errors"
+    ).unwrap();
 }
 
 #[actix_rt::main]
@@ -232,6 +236,7 @@ async fn response_for_gcs_client_error(
                     .body("not found.".into()) {
                 Ok(v) => v,
                 Err(err) => {
+                    INTERNAL_SERVER_ERRORS_COUNTER.inc();
                     error!("failed to create response: {}", err);
                     return Response::new("internal server error".into());
                 }
@@ -246,6 +251,7 @@ async fn response_for_gcs_client_error(
         .body("failed to get gcs object".into()) {
         Ok(v) => v,
         Err(err) => {
+            INTERNAL_SERVER_ERRORS_COUNTER.inc();
             error!("failed to create response: {}", err);
             Response::new("internal server error".into())
         }
