@@ -6,6 +6,17 @@ use std::sync::Arc;
 
 const KEY_PREFIX: &'static str = "cloud_storage_proxy";
 
+lazy_static! {
+    static ref REDIS_CACHE_GET: Counter = register_counter!(
+        "redis_cache_get",
+        "redis cache get operations"
+    ).unwrap();
+    static ref REDIS_CACHE_PUT: Counter = register_counter!(
+        "redis_cache_put",
+        "redis cache put operations"
+    ).unwrap();
+}
+
 pub struct RedisCache {
     client: Arc<Mutex<redis_async::client::PairedConnection>>,
     ttl: u64,
@@ -42,6 +53,8 @@ impl Handler<PutCacheEntry> for RedisCache {
         let msg = msg.clone();
         let ttl = self.ttl.clone();
 
+        REDIS_CACHE_PUT.inc();
+
         Box::pin(async move {
             let client = client.lock().await;
 
@@ -61,6 +74,8 @@ impl Handler<GetCacheEntry> for RedisCache {
     fn handle(&mut self, msg: GetCacheEntry, _: &mut Context<Self>) -> Self::Result {
         let client = self.client.clone();
         let msg = msg.clone();
+
+        REDIS_CACHE_GET.inc();
 
         Box::pin(async move {
             let client = client.lock().await;
