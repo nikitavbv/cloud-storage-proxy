@@ -52,6 +52,10 @@ lazy_static! {
         "wrong_method_requests_counter",
         "Non-get requests"
     ).unwrap();
+    static ref BAD_REQUESTS_COUNTER: Counter = register_counter!(
+        "bad_requests_counter",
+        "bad requests"
+    ).unwrap();
     static ref INTERNAL_SERVER_ERRORS_COUNTER: Counter = register_counter!(
         "internal_server_errors_counter",
         "internal server errors"
