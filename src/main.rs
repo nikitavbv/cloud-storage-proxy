@@ -105,6 +105,7 @@ async fn proxy_service(
 ) -> Result<Response<Body>, String> {
     if req.method() != Method::GET {
         WRONG_METHOD_REQUESTS_COUNTER.inc();
+        BAD_REQUEST_COUNTER.inc();
         return Ok(Response::new("wrong method".into()));
     }
 
@@ -117,6 +118,7 @@ async fn proxy_service(
             Ok(v) => v,
             Err(err) => {
                 error!("failed to read host header: {}", err);
+                BAD_REQUEST_COUNTER.inc();
                 return Ok(Response::new("failed to read host header".into()))
             }
         }
@@ -125,11 +127,17 @@ async fn proxy_service(
 
     let bucket = match config.bucket_configuration_by_host(&host) {
         Some(v) => v,
-        None => return Ok(Response::new("unknown host".into()))
+        None => {
+            BAD_REQUEST_COUNTER.inc();
+            return Ok(Response::new("unknown host".into()))
+        }
     };
     let bucket_name = match bucket.bucket.as_ref() {
         Some(v) => v.as_str(),
-        None => return Ok(Response::new("no origin configured".into()))
+        None => {
+            BAD_REQUEST_COUNTER.inc();
+            return Ok(Response::new("no origin configured".into()))
+        }
     };
     let mut object_name = req.uri().path().to_string();
 
