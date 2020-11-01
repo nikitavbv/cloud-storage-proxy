@@ -3,6 +3,7 @@ use crate::caching::messages::{CacheEntry, GetCacheEntry, PutCacheEntry, CacheEr
 use redis_async::resp_array;
 use tokio::sync::Mutex;
 use std::sync::Arc;
+use prometheus::{Counter, register_counter};
 
 const KEY_PREFIX: &'static str = "cloud_storage_proxy";
 
