@@ -48,3 +48,17 @@ impl CacheEntry {
         }
     }
 }
+
+#[derive(Message, Clone)]
+#[rtype(result = "Result<(), RateLimitingError>")]
+pub struct PutRateLimitingStats {
+    pub bucket: String,
+    pub client: String
+}
+
+#[derive(Message, Clone)]
+#[rtype(result = "Result<RateLimitingEntry, RateLimitingError>")]
+pub struct GetRateLimitingStats {
+    pub bucket: String,
+    pub client: String
+}
