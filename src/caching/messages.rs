@@ -69,3 +69,10 @@ pub struct GetRateLimitingStats {
     pub bucket: String,
     pub client: String
 }
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct RateLimitingEntry {
+    bucket: String,
+    client: String,
+    requests: u64
+}
