@@ -29,6 +29,7 @@ pub struct Config {
     pub metrics_endpoint: Option<String>,
     pub caching: Option<HashMap<String, Caching>>,
     pub buckets: Option<HashMap<String, BucketConfiguration>>,
+    pub rate_limiting_groups: Option<HashMap<String, RateLimtingConfiguration>>
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -54,6 +55,12 @@ pub struct Caching {
     pub host: Option<String>,
     pub port: Option<u16>,
 }
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct RateLimitingConfiguration {
+    pub rpm: Option<u64>
+}
+
 
 impl Config {
 
