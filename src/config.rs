@@ -29,7 +29,7 @@ pub struct Config {
     pub metrics_endpoint: Option<String>,
     pub caching: Option<HashMap<String, Caching>>,
     pub buckets: Option<HashMap<String, BucketConfiguration>>,
-    pub rate_limiting_groups: Option<HashMap<String, RateLimtingConfiguration>>
+    pub rate_limiting_groups: Option<HashMap<String, RateLimitingConfiguration>>
 }
 
 #[derive(Deserialize, Debug, Clone)]
