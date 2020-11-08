@@ -59,9 +59,9 @@ pub struct Caching {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct RateLimitingConfiguration {
-    pub rpm: Option<u64>
+    pub requests: Option<u64>,
+    pub window_seconds: Option<u64>
 }
-
 
 impl Config {
 
