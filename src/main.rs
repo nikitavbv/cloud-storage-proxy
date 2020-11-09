@@ -22,6 +22,7 @@ use prometheus::{TextEncoder, Encoder, Counter, register_counter};
 mod config;
 mod gcs;
 mod caching;
+mod rate_limiting;
 
 lazy_static! {
     static ref REQUEST_OK_COUNTER: Counter = register_counter!(
