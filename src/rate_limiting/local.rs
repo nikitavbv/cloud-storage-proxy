@@ -6,7 +6,7 @@ pub struct LocalRateLimiter {
 }
 
 impl LocalRateLimiter {
-    pub fn new(capacity: Option<usize>, ttl: Option<u64>) -> Self {
+    pub fn new() -> Self {
         Self {
             stats: HashMap::new()
         }
