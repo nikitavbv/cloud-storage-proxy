@@ -1,12 +1,19 @@
 use std::collections::HashMap;
 use crate::rate_limiting::rate_limiting::RateLimiterInstance::LocalRateLimiter;
+use crate::config;
+
+custom_error!{pub RateLimitingInstantiationError
+    MissingField { field_name: String } = "missing field: {field_name}",
+    NotImplemented { rl: String } = "rate limiter not implemented: {rl}",
+    RateLimiterError { source: RateLimiterError } = "rate limiter error: {}"
+}
 
 pub struct RateLimiting {
     rate_limiters: HashMap<String, RateLimiterInstance>
 }
 
 impl RateLimiting {
-    pub async fn new(config: &HashMap<String, config::RateLimiting>) -> Self {
+    pub async fn new(config: &HashMap<String, config::RateLimitingConfiguration>) -> Self {
         let mut rate_limiters = HashMap::new();
 
         for rate_limiter_config in config {
