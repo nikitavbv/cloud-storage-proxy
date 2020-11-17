@@ -59,6 +59,8 @@ pub struct Caching {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct RateLimitingConfiguration {
+    #[serde(rename="type")]
+    pub rate_limiting_type: Option<String>,
     pub requests: Option<u64>,
     pub window_seconds: Option<u64>
 }
