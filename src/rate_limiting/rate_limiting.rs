@@ -1,11 +1,14 @@
 use std::collections::HashMap;
-use crate::rate_limiting::rate_limiting::RateLimiterInstance::LocalRateLimiter;
+use super::messages::RateLimitingError;
 use crate::config;
+use custom_error::custom_error;
+use crate::rate_limiting::local::LocalRateLimiter;
+use actix::Addr;
 
-custom_error!{pub RateLimitingInstantiationError
+custom_error!{pub RateLimiterInstantiationError
     MissingField { field_name: String } = "missing field: {field_name}",
-    NotImplemented { rl: String } = "rate limiter not implemented: {rl}",
-    RateLimiterError { source: RateLimiterError } = "rate limiter error: {}"
+    NotImplemented { rate_limiter_type: String } = "rate limiter not implemented: {rate_limiter_type}",
+    RateLimiterError { source: RateLimitingError } = "rate limiter error: {}"
 }
 
 pub struct RateLimiting {
@@ -32,11 +35,11 @@ impl RateLimiting {
         }
     }
 
-    async fn make_rate_limiter(config: &config::RateLimiter) -> Result<CacheInstance, RateLimiterInstantiationError> {
+    async fn make_rate_limiter(config: &config::RateLimitingConfiguration) -> Result<RateLimiterInstance, RateLimiterInstantiationError> {
         match &config.rate_limiter_type {
             Some(v) => match &v as &str {
                 "local" => Ok(RateLimiterInstance::LocalCache(LocalRateLimiter::new().start())),
-                cache_type => Err(RateLimiterInstantiationError::NotImplemented { rate_limiter_type: rate_limiter_type.to_string() })
+                cache_type => Err(RateLimiterInstantiationError::NotImplemented { rate_limiter_type: v.to_string() })
             },
             None => Err(RateLimiterInstantiationError::MissingField { field_name: "rate_limiter_type".to_string() })
         }
