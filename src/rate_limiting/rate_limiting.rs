@@ -36,9 +36,9 @@ impl RateLimiting {
     }
 
     async fn make_rate_limiter(config: &config::RateLimitingConfiguration) -> Result<RateLimiterInstance, RateLimiterInstantiationError> {
-        match &config.rate_limiter_type {
+        match &config.rate_limiting_type {
             Some(v) => match &v as &str {
-                "local" => Ok(RateLimiterInstance::LocalCache(LocalRateLimiter::new().start())),
+                "local" => Ok(RateLimiterInstance::LocalRateLimiter(LocalRateLimiter::new().start())),
                 cache_type => Err(RateLimiterInstantiationError::NotImplemented { rate_limiter_type: v.to_string() })
             },
             None => Err(RateLimiterInstantiationError::MissingField { field_name: "rate_limiter_type".to_string() })
