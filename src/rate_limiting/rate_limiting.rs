@@ -3,7 +3,7 @@ use super::messages::RateLimitingError;
 use crate::config;
 use custom_error::custom_error;
 use crate::rate_limiting::local::LocalRateLimiter;
-use actix::Addr;
+use actix::{Addr, Actor};
 
 custom_error!{pub RateLimiterInstantiationError
     MissingField { field_name: String } = "missing field: {field_name}",
