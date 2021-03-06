@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 use actix::{Actor, Context, Handler};
+
+use prometheus::{Gauge, Counter, register_gauge, register_counter};
+
 use crate::rate_limiting::messages::{PutRateLimitingStats, RateLimitingEntry, RateLimitingError};
 
 lazy_static! {
