@@ -39,6 +39,6 @@ impl Handler<PutRateLimitingStats> for LocalRateLimiter {
         let key = format!("{}:{}", msg.bucket, msg.client);
         let current_stats = self.stats.get(&key).unwrap_or(&(0 as u64, 0 as u64));
         self.stats.insert(key, (current_stats._1 + 1, current_stats._2));
-        OK(())
+        Ok(())
     }
 }
