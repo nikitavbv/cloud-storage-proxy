@@ -38,7 +38,7 @@ impl Handler<PutRateLimitingStats> for LocalRateLimiter {
     fn handle(&mut self, msg: PutRateLimitingStats, _: &mut Context<Self>) -> Self::Result {
         let key = format!("{}:{}", msg.bucket, msg.client);
         let current_stats = self.stats.get(&key).unwrap_or(&(0 as u64, 0 as u64));
-        self.stats.insert(key, (current_stats._1 + 1, current_stats._2));
+        self.stats.insert(key, (current_stats.0 + 1, current_stats.1));
         Ok(())
     }
 }
