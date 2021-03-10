@@ -67,6 +67,8 @@ lazy_static! {
 async fn main() -> std::io::Result<()> {
     env_logger::init();
 
+    info!("cloud storage proxy started");
+
     let config = Arc::new(load_config()?);
     let addr = config.ip_addr().unwrap_or([0, 0, 0, 0].into());
     let addr = SocketAddr::new(addr, config.port.unwrap_or(8080));
