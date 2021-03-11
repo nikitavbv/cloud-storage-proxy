@@ -109,6 +109,7 @@ async fn proxy_service(
     if req.method() != Method::GET {
         WRONG_METHOD_REQUESTS_COUNTER.inc();
         BAD_REQUESTS_COUNTER.inc();
+        trace!("wrong method: {}", req.method());
         return Ok(Response::new("wrong method".into()));
     }
 
