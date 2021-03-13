@@ -3,7 +3,7 @@ use actix::{Actor, Context, Handler};
 
 use prometheus::{Gauge, Counter, register_gauge, register_counter};
 
-use crate::rate_limiting::messages::{PutRateLimitingStats, RateLimitingEntry, RateLimitingError};
+use crate::rate_limiting::messages::{PutRateLimitingStats, RateLimitingError};
 
 lazy_static! {
     static ref LOCAL_RATE_LIMITED: Gauge = register_gauge!(
